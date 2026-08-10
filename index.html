@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Somador de Contas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg-desk:#161f1a;
+    --bg-desk-2:#101713;
+    --paper:#f6f1e2;
+    --paper-line:#d9cda3;
+    --ink:#26332a;
+    --ink-soft:#6b7268;
+    --stamp-red:#b1392c;
+    --stamp-red-dark:#8c2c22;
+    --brass:#bd9a4c;
+    --brass-soft:#8a7442;
+    --sage:#71906f;
+    --ok:#5a8a5f;
+    --warn:#b98a2f;
+    --err:#b1392c;
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Noto Serif', serif;
+    --font-mono: 'Courier New', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background: radial-gradient(ellipse at 50% -10%, #223228 0%, var(--bg-desk) 45%, var(--bg-desk-2) 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:var(--font-display);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:6vh 16px 8vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:0.05;
+    background-image: repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 1px, transparent 6px);
+  }
+
+  .rig{
+    width:100%;
+    max-width:520px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    position:relative;
+    z-index:1;
+  }
+
+  .machine{
+    background:linear-gradient(160deg,#20291f,#151d16);
+    border:1px solid #3a4536;
+    border-bottom:none;
+    border-radius:16px 16px 0 0;
+    padding:22px 26px 30px;
+    box-shadow: 0 -1px 0 rgba(255,255,255,0.03) inset, 0 18px 40px -20px #000a;
+    position:relative;
+  }
+  .machine::after{
+    content:"";
+    position:absolute;
+    left:24px;right:24px;bottom:0;
+    height:1px;
+    background:linear-gradient(90deg,transparent, var(--brass-soft) 20%, var(--brass-soft) 80%, transparent);
+    opacity:0.5;
+  }
+  .plate{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .plate h1{
+    margin:0;
+    font-weight:700;
+    font-size:clamp(20px,5vw,25px);
+    letter-spacing:0.06em;
+    color:#efe6c8;
+    text-shadow:0 1px 0 #000;
+  }
+  .plate .glyph{ font-size:20px; opacity:0.85; }
+  .machine p.sub{
+    margin:6px 0 0;
+    font-style:italic;
+    color:#9fae98;
+    font-size:13.5px;
+  }
+  .reel-slot{
+    margin-top:16px;
+    height:8px;
+    border-radius:6px;
+    background: linear-gradient(180deg,#0b100c,#1a231a 60%, #0b100c);
+    box-shadow:inset 0 2px 4px #000, inset 0 -1px 0 rgba(255,255,255,0.05);
+  }
+
+  .tape-wrap{ position:relative; padding-top:14px; }
+  .tape{
+    background:var(--paper);
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, #00000006 27px 28px);
+    padding:26px 24px 20px;
+    box-shadow:0 24px 46px -20px #000a;
+    clip-path: polygon(
+      0% 4%, 3.5% 0%, 7% 2.6%, 10.5% 0.3%, 14% 3.4%, 17.5% 0.6%,
+      21% 2.8%, 24.5% 0%, 28% 2.2%, 31.5% 0.5%, 35% 3.6%, 38.5% 0%,
+      42% 2.4%, 45.5% 0.6%, 49% 3.2%, 52.5% 0%, 56% 2.6%, 59.5% 0.4%,
+      63% 3.4%, 66.5% 0%, 70% 2.2%, 73.5% 0.6%, 77% 3.6%, 80.5% 0%,
+      84% 2.4%, 87.5% 0.4%, 91% 3.2%, 94.5% 0%, 97.5% 2.4%, 100% 4%,
+      100% 100%, 0% 100%
+    );
+  }
+
+  .drop{
+    border:1.5px dashed var(--paper-line);
+    border-radius:10px;
+    padding:22px 16px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .18s ease, background-color .18s ease, transform .12s ease;
+    color:var(--ink-soft);
+    outline-offset:4px;
+  }
+  .drop:hover{ border-color:var(--brass-soft); }
+  .drop:focus-visible{ outline:2px solid var(--stamp-red); }
+  .drop.dragging{
+    border-color:var(--stamp-red);
+    background:#b1392c0d;
+    transform:scale(1.01);
+  }
+  .drop .icon{ width:30px;height:30px; margin:0 auto 8px; opacity:0.55; }
+  .drop .t1{ font-size:15px; color:var(--ink); font-weight:600; }
+  .drop .t2{ font-size:12.5px; margin-top:3px; color:var(--ink-soft); }
+  .drop input[type=file]{ position:absolute; width:1px;height:1px; opacity:0; pointer-events:none; }
+
+  .drop.compact{
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .drop.compact .icon{width:16px;height:16px;margin:0;}
+  .drop.compact .t1{font-size:13px;}
+  .drop.compact .t2{display:none;}
+
+  .lines{ margin-top:4px; }
+  .line{
+    display:grid;
+    grid-template-columns:24px 1fr auto 20px;
+    align-items:center;
+    gap:10px;
+    padding:12px 2px;
+    border-bottom:1px dashed var(--paper-line);
+    animation:print-in .32s cubic-bezier(.2,.8,.3,1);
+  }
+  @media (prefers-reduced-motion: reduce){ .line{animation:none;} }
+  @keyframes print-in{
+    from{ opacity:0; transform:translateY(-10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .line .idx{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--brass-soft);
+    text-align:right;
+  }
+  .line .meta{ min-width:0; }
+  .line .fname{
+    font-size:13.5px;
+    color:var(--ink);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .conf{
+    width:6px;height:6px;
+    border-radius:50%;
+    flex:none;
+    background:var(--ok);
+  }
+  .conf.warn{background:var(--warn);}
+  .conf.err{background:var(--err);}
+  .line .due{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:1px;
+  }
+  .line .amount{
+    font-family:var(--font-mono);
+    font-size:15.5px;
+    font-weight:700;
+    color:var(--ink);
+    text-align:right;
+    white-space:nowrap;
+    cursor:text;
+    border-bottom:1px dotted transparent;
+  }
+  .line .amount:hover{ border-bottom-color:var(--brass-soft); }
+  .line .amount input{
+    font-family:var(--font-mono);
+    font-size:15.5px;
+    font-weight:700;
+    color:var(--ink);
+    text-align:right;
+    width:96px;
+    border:none;
+    border-bottom:1px solid var(--stamp-red);
+    background:transparent;
+    outline:none;
+    padding:0;
+  }
+  .line .processing{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.08em;
+  }
+  .line .rm{
+    width:20px;height:20px;
+    border:none;
+    background:none;
+    cursor:pointer;
+    color:var(--ink-soft);
+    font-size:15px;
+    line-height:1;
+    opacity:0.5;
+    transition:opacity .15s, color .15s;
+  }
+  .line .rm:hover{ opacity:1; color:var(--stamp-red); }
+
+  .empty-hint{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:12.5px;
+    padding:18px 4px 4px;
+    font-style:italic;
+  }
+
+  .total-row{
+    margin-top:8px;
+    padding-top:16px;
+    border-top:2px solid var(--ink);
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+  }
+  .total-row .label{
+    font-size:12.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .total-row .label small{
+    display:block;
+    font-size:11px;
+    letter-spacing:0.02em;
+    text-transform:none;
+    font-style:italic;
+    margin-top:2px;
+  }
+  .total-row .value{
+    font-family:var(--font-mono);
+    font-size:clamp(26px,7vw,32px);
+    font-weight:700;
+    color:var(--stamp-red-dark);
+  }
+  .total-row .value sup{
+    font-size:14px;
+    margin-right:2px;
+    font-weight:700;
+  }
+
+  .actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:14px;
+  }
+  .clear-btn{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-family:var(--font-display);
+    font-style:italic;
+    font-size:12.5px;
+    cursor:pointer;
+    text-decoration:underline;
+    text-decoration-color:var(--paper-line);
+    text-underline-offset:3px;
+    padding:4px 2px;
+  }
+  .clear-btn:hover{ color:var(--stamp-red); text-decoration-color:var(--stamp-red);}
+  .clear-btn:disabled{ opacity:0.35; cursor:default; text-decoration:none; }
+
+  .trust{
+    margin-top:18px;
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    color:var(--sage);
+    font-size:11.5px;
+    letter-spacing:0.03em;
+  }
+  .trust svg{width:12px;height:12px;flex:none;opacity:0.9;}
+
+  @media (max-width:420px){
+    .machine{padding:18px 18px 24px;}
+    .tape{padding:22px 16px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="rig">
+
+  <div class="machine">
+    <div class="plate">
+      <h1>Somador de Contas</h1>
+      <span class="glyph" aria-hidden="true">🧾</span>
+    </div>
+    <p class="sub">Arraste os boletos. Eu somo pra você.</p>
+    <div class="reel-slot" aria-hidden="true"></div>
+  </div>
+
+  <div class="tape-wrap">
+    <div class="tape" id="tape">
+
+      <div class="drop" id="dropzone" tabindex="0" role="button"
+           aria-label="Arraste arquivos PDF aqui, ou toque para escolher">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M12 3v12" stroke-linecap="round"/>
+          <path d="M7 10l5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 18v2a1 1 0 001 1h14a1 1 0 001-1v-2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="t1">Solte os PDFs aqui</div>
+        <div class="t2">ou toque para escolher os arquivos</div>
+        <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple>
+      </div>
+
+      <div class="lines" id="lines"></div>
+
+      <div class="empty-hint" id="emptyHint">a fita fica aqui, conforme você for soltando as contas</div>
+
+      <div class="total-row">
+        <div class="label">Total<br><small id="countLabel">nenhuma conta ainda</small></div>
+        <div class="value"><sup>R$</sup><span id="totalValue">0,00</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="clear-btn" id="clearBtn" disabled>limpar tudo</button>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="trust">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="5" y="11" width="14" height="10" rx="2"/>
+      <path d="M8 11V7a4 4 0 018 0v4"/>
+    </svg>
+    processado 100% no seu navegador — nenhum arquivo sai do computador
+  </p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // PDF.js worker (CDN)
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var state = { items: [] };
+  var nextId = 1;
+
+  var dropzone   = document.getElementById('dropzone');
+  var fileInput  = document.getElementById('fileInput');
+  var linesEl    = document.getElementById('lines');
+  var emptyHint  = document.getElementById('emptyHint');
+  var totalValueEl = document.getElementById('totalValue');
+  var countLabel = document.getElementById('countLabel');
+  var clearBtn   = document.getElementById('clearBtn');
+  var tapeEl     = document.getElementById('tape');
+
+  function fmtBRL(n){
+    if (typeof n !== 'number' || !isFinite(n)) return '—';
+    return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function parseBRLNumber(str){
+    if (!str) return null;
+    var cleaned = String(str).trim().replace(/[^0-9.,]/g, '');
+    if (!cleaned) return null;
+    // Formato brasileiro: milhares com ponto, decimais com vírgula
+    if (cleaned.indexOf(',') !== -1){
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    }
+    var n = parseFloat(cleaned);
+    return isNaN(n) ? null : n;
+  }
+
+  // Normaliza texto para busca (remove acentos, unifica espaços)
+  function normalize(text){
+    return String(text || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  function extractFromText(fullText){
+    var result = { amount: null, confidence: 'err', due: null };
+    var raw = String(fullText || '').replace(/\u00a0/g, ' ');
+    var norm = normalize(raw);
+
+    // Padrão de valor monetário brasileiro
+    var numRe = /(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+
+    // Regras prioritárias (maior score = mais confiança)
+    // Testadas nos boletos reais: Naturgy, Claro, Light, Nubank
+    var rules = [
+      // Nubank – frase principal da fatura
+      { score: 130, re: /(?:esta e a sua fatura|fatura de .{0,20}no valor de)\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 125, re: /pagamento total da fatura\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 120, re: /valor a pagar\s*(?:r\$\s*:?\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 118, re: /total a pagar\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 115, re: /valor cobrado\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 112, re: /valor total da fatura\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 110, re: /total da fatura\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 108, re: /valor total\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 105, re: /total geral\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      // Light – cabeçalho "TOTAL A PAGAR" + valor próximo
+      { score: 100, re: /(?:total a pagar|total\s*a\s*pagar)[\s\S]{0,40}?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      // Claro – "Valor total" ou header
+      { score: 95,  re: /valor total\s+(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      { score: 90,  re: /valor\s+do\s+documento\s*(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i },
+      // Fallback genérico com R$
+      { score: 70,  re: /r\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/i }
+    ];
+
+    var candidates = [];
+
+    for (var i = 0; i < rules.length; i++){
+      var m = norm.match(rules[i].re);
+      if (m && m[1]){
+        var amount = parseBRLNumber(m[1]);
+        if (typeof amount === 'number' && isFinite(amount) && amount > 0){
+          candidates.push({ amount: amount, score: rules[i].score });
+        }
+      }
+    }
+
+    // Também procura no texto original (pode preservar melhor a formatação)
+    for (var i = 0; i < rules.length; i++){
+      var m2 = raw.match(rules[i].re);
+      if (m2 && m2[1]){
+        var amount2 = parseBRLNumber(m2[1]);
+        if (typeof amount2 === 'number' && isFinite(amount2) && amount2 > 0){
+          candidates.push({ amount: amount2, score: rules[i].score });
+        }
+      }
+    }
+
+    // Ordena por score e escolhe o melhor
+    if (candidates.length){
+      candidates.sort(function(a, b){ return b.score - a.score; });
+      var best = candidates[0];
+
+      // Verifica se há conflito forte (valores muito diferentes com score alto)
+      var highScore = candidates.filter(function(c){ return c.score >= 100; });
+      var distinctHigh = {};
+      highScore.forEach(function(c){ distinctHigh[c.amount.toFixed(2)] = true; });
+
+      if (Object.keys(distinctHigh).length <= 1 && best.score >= 90){
+        result.amount = best.amount;
+        result.confidence = best.score >= 110 ? 'ok' : 'warn';
+      } else if (best.score >= 100){
+        result.amount = best.amount;
+        result.confidence = 'warn';
+      }
+    }
+
+    // Fallback conservador: se só existir um único valor monetário "grande" no documento
+    if (result.amount === null){
+      var allMatches = raw.match(numRe) || [];
+      var unique = {};
+      allMatches.forEach(function(v){
+        var n = parseBRLNumber(v);
+        if (typeof n === 'number' && isFinite(n) && n >= 10){ // ignora valores muito pequenos
+          unique[n.toFixed(2)] = n;
+        }
+      });
+      var keys = Object.keys(unique);
+      if (keys.length === 1){
+        result.amount = unique[keys[0]];
+        result.confidence = 'warn';
+      } else if (keys.length > 1){
+        // Pega o maior valor (comum em faturas onde o total é o maior número)
+        var max = 0;
+        keys.forEach(function(k){
+          if (unique[k] > max) max = unique[k];
+        });
+        // Só aceita se o maior for significativamente maior que o segundo
+        var sorted = keys.map(function(k){ return unique[k]; }).sort(function(a,b){ return b-a; });
+        if (sorted[0] > sorted[1] * 1.5 || sorted[0] >= 100){
+          result.amount = sorted[0];
+          result.confidence = 'warn';
+        }
+      }
+    }
+
+    // Data de vencimento
+    var dueMatch = norm.match(/vencimento[^0-9]{0,25}(\d{2}\/\d{2}\/\d{4})/i) ||
+                   raw.match(/vencimento[^0-9]{0,25}(\d{2}\/\d{2}\/\d{4})/i) ||
+                   norm.match(/(\d{2}\/\d{2}\/\d{4})\s*(?:venc|vencimento)/i);
+    if (dueMatch) result.due = dueMatch[1];
+
+    // Nubank formato especial "11 AGO 2026"
+    if (!result.due){
+      var nubankDue = raw.match(/data de vencimento:\s*(\d{1,2}\s+[A-Z]{3}\s+\d{4})/i);
+      if (nubankDue) result.due = nubankDue[1];
+    }
+
+    return result;
+  }
+
+  async function readPdfText(file){
+    var buf = await file.arrayBuffer();
+    var loadingTask = pdfjsLib.getDocument({ data: buf });
+    var pdf = await loadingTask.promise;
+    var fullText = '';
+    // Lê todas as páginas (importante para Nubank e Claro)
+    for (var p = 1; p <= pdf.numPages; p++){
+      var page = await pdf.getPage(p);
+      var content = await page.getTextContent();
+      var lastY = null;
+      var line = '';
+      for (var i = 0; i < content.items.length; i++){
+        var it = content.items[i];
+        var y = it.transform ? it.transform[5] : null;
+        if (lastY !== null && y !== null && Math.abs(y - lastY) > 3){
+          fullText += line + '\n';
+          line = '';
+        }
+        line += it.str + ' ';
+        lastY = y;
+      }
+      fullText += line + '\n';
+    }
+    return fullText;
+  }
+
+  function render(){
+    linesEl.innerHTML = '';
+    state.items.forEach(function(item, idx){
+      var row = document.createElement('div');
+      row.className = 'line';
+
+      var idxEl = document.createElement('div');
+      idxEl.className = 'idx';
+      idxEl.textContent = String(idx + 1).padStart(2, '0');
+      row.appendChild(idxEl);
+
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      var fname = document.createElement('div');
+      fname.className = 'fname';
+
+      if (item.status !== 'processing'){
+        var dot = document.createElement('span');
+        dot.className = 'conf' + (item.confidence === 'warn' ? ' warn' : item.confidence === 'err' ? ' err' : '');
+        dot.title = item.confidence === 'ok' ? 'valor identificado com confiança' :
+                    item.confidence === 'warn' ? 'confira o valor (baixa confiança)' :
+                    'não identificado — clique para editar';
+        fname.appendChild(dot);
+      }
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = item.filename;
+      fname.appendChild(nameSpan);
+      meta.appendChild(fname);
+
+      if (item.due){
+        var due = document.createElement('div');
+        due.className = 'due';
+        due.textContent = 'vence ' + item.due;
+        meta.appendChild(due);
+      } else if (item.status === 'processing'){
+        var proc = document.createElement('div');
+        proc.className = 'due';
+        proc.textContent = 'lendo…';
+        meta.appendChild(proc);
+      } else if (item.status === 'error'){
+        var err = document.createElement('div');
+        err.className = 'due';
+        err.textContent = 'erro ao ler PDF';
+        meta.appendChild(err);
+      } else if (item.confidence === 'err'){
+        var review = document.createElement('div');
+        review.className = 'due';
+        review.textContent = 'valor não identificado — clique para editar';
+        meta.appendChild(review);
+      }
+      row.appendChild(meta);
+
+      var amountWrap = document.createElement('div');
+      amountWrap.className = 'amount';
+      if (item.status === 'processing'){
+        amountWrap.innerHTML = '<span class="processing">…</span>';
+      } else {
+        amountWrap.textContent = typeof item.amount === 'number' ? fmtBRL(item.amount) : '—';
+        amountWrap.tabIndex = 0;
+        amountWrap.setAttribute('role', 'button');
+        amountWrap.setAttribute('aria-label', 'Editar valor de ' + item.filename);
+        amountWrap.addEventListener('click', function(){ startEdit(item.id); });
+        amountWrap.addEventListener('keydown', function(e){
+          if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); startEdit(item.id); }
+        });
+      }
+      row.appendChild(amountWrap);
+
+      var rm = document.createElement('button');
+      rm.className = 'rm';
+      rm.setAttribute('aria-label', 'Remover ' + item.filename);
+      rm.innerHTML = '&times;';
+      rm.addEventListener('click', function(){ removeItem(item.id); });
+      row.appendChild(rm);
+
+      linesEl.appendChild(row);
+    });
+
+    emptyHint.style.display = state.items.length ? 'none' : 'block';
+    dropzone.classList.toggle('compact', state.items.length > 0);
+
+    var total = state.items.reduce(function(sum, it){
+      return sum + (typeof it.amount === 'number' ? it.amount : 0);
+    }, 0);
+    totalValueEl.textContent = fmtBRL(total);
+
+    var n = state.items.length;
+    countLabel.textContent = n === 0 ? 'nenhuma conta ainda' : (n === 1 ? '1 conta' : n + ' contas');
+    clearBtn.disabled = n === 0;
+  }
+
+  function startEdit(id){
+    var item = state.items.find(function(it){ return it.id === id; });
+    if (!item) return;
+    var amountEl = linesEl.children[state.items.indexOf(item)].querySelector('.amount');
+    var current = typeof item.amount === 'number' ? fmtBRL(item.amount) : '';
+    amountEl.innerHTML = '';
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.value = current;
+    input.setAttribute('aria-label', 'Valor de ' + item.filename);
+    amountEl.appendChild(input);
+    input.focus();
+    input.select();
+
+    function commit(){
+      var val = parseBRLNumber(input.value);
+      item.amount = val;
+      item.confidence = 'ok';
+      item.status = 'ok';
+      render();
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape'){ e.preventDefault(); render(); }
+    });
+  }
+
+  function removeItem(id){
+    state.items = state.items.filter(function(it){ return it.id !== id; });
+    render();
+  }
+
+  async function addFiles(fileList){
+    var files = Array.prototype.filter.call(fileList, function(f){
+      return f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    });
+    if (!files.length) return;
+
+    var pending = files.map(function(f){
+      return {
+        id: nextId++,
+        filename: f.name,
+        amount: null,
+        due: null,
+        status: 'processing',
+        confidence: 'err'
+      };
+    });
+    state.items = state.items.concat(pending);
+    render();
+
+    for (var i = 0; i < files.length; i++){
+      var file = files[i];
+      var item = pending[i];
+      try {
+        var text = await readPdfText(file);
+        var extracted = extractFromText(text);
+        item.amount = extracted.amount;
+        item.confidence = extracted.confidence;
+        item.due = extracted.due;
+        item.status = 'ok';
+      } catch (err){
+        console.error('Erro ao ler PDF:', file.name, err);
+        item.amount = null;
+        item.confidence = 'err';
+        item.status = 'error';
+      }
+      render();
+    }
+  }
+
+  // Eventos
+  dropzone.addEventListener('click', function(){ fileInput.click(); });
+  dropzone.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
+  });
+  fileInput.addEventListener('change', function(){
+    addFiles(fileInput.files);
+    fileInput.value = '';
+  });
+
+  ['dragenter','dragover'].forEach(function(evt){
+    tapeEl.addEventListener(evt, function(e){
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.add('dragging');
+    });
+  });
+  ['dragleave','drop'].forEach(function(evt){
+    tapeEl.addEventListener(evt, function(e){
+      e.preventDefault(); e.stopPropagation();
+      if (evt === 'dragleave' && e.target !== tapeEl) return;
+      dropzone.classList.remove('dragging');
+    });
+  });
+  tapeEl.addEventListener('drop', function(e){
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
+      addFiles(e.dataTransfer.files);
+    }
+  });
+
+  clearBtn.addEventListener('click', function(){
+    state.items = [];
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
