@@ -4,6 +4,8 @@ Ferramenta simples para somar valores de boletos e faturas em PDF.
 
 Arraste seus boletos e veja o total automaticamente. Tudo processado **100% no seu navegador** — nenhum arquivo é enviado para nenhum servidor.
 
+![Somador de Contas](screenshot.png)
+
 ---
 
 ## Funcionalidades
