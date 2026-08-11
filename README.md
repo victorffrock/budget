@@ -12,6 +12,8 @@ Visual baseado no [GNOME HIG](https://developer.gnome.org/hig/) — paleta,
 tipografia e componentes (boxed list, header bar, status page) seguem as
 diretrizes oficiais do GNOME.
 
+![Somador de Contas](screenshot.png)
+
 ## Como usar
 
 **Opção 1 — só o navegador, sem instalar nada:**
