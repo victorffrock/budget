@@ -12,7 +12,7 @@ Visual baseado no [GNOME HIG](https://developer.gnome.org/hig/) — paleta,
 tipografia e componentes (boxed list, header bar, status page) seguem as
 diretrizes oficiais do GNOME.
 
-<h1 align="center">Somador de Contas</h1>
+<![Somador de Contas](screenshot.png)
 
 ## Como usar
 
