@@ -12,15 +12,19 @@ Visual baseado no [GNOME HIG](https://developer.gnome.org/hig/) — paleta,
 tipografia e componentes (boxed list, header bar, status page) seguem as
 diretrizes oficiais do GNOME.
 
-<![Somador de Contas](screenshot.png)
+![Somador de Contas](screenshot.png)
 
 ## Como usar
 
 **Opção 1 — só o navegador, sem instalar nada:**
-Baixe [`app/somador-de-contas.html`](app/somador-de-contas.html) e abra
-com dois cliques. Funciona em qualquer sistema com um navegador.
+
+- Abra o arquivo [`index.html`](index.html) no navegador, ou
+- Use [`app/somador-de-contas.html`](app/somador-de-contas.html)
+
+Funciona em qualquer sistema com um navegador moderno.
 
 **Opção 2 — AppImage (Linux), com ícone e janela própria:**
+
 Baixe o `.AppImage` da [última release](../../releases), dê permissão de
 execução e rode:
 
@@ -50,15 +54,17 @@ indicador (✓ / ⚠ / ?) mostrando o quão confiável foi a identificação.
 
 ```
 app/
-  src/template.html   – HTML/CSS/JS fonte (com placeholders de build)
-  build.py            – embute o pdf.js + worker + ícone → HTML final
+  src/template.html      – HTML/CSS/JS fonte (com placeholders de build)
+  build.py               – embute o pdf.js + worker + ícone → HTML final
   somador-de-contas.html – build pronto para usar
 desktop/
-  main.js             – wrapper Electron (janela, ícone, menu)
-  package.json        – config do electron-builder
-  assets/icon.png      – ícone do app (gerado por assets/make_icon.py)
+  main.js                – wrapper Electron (janela, ícone, menu)
+  preload.js             – ponte segura para minimizar/fechar a janela
+  package.json           – config do electron-builder
+  assets/icon.png        – ícone do app
 scripts/
-  build-appimage.sh   – gera o AppImage com o runtime sem FUSE
+  build-appimage.sh      – gera o AppImage com o runtime sem FUSE
+index.html               – mesma versão web, na raiz (atalho)
 ```
 
 ## Recompilando a partir do código-fonte
@@ -67,7 +73,7 @@ scripts/
 # 1. gerar o HTML autocontido
 cd app
 npm install
-python3 build.py          # gera app/somador-de-contas.html
+python3 build.py
 
 # 2. (opcional) empacotar como AppImage
 cd ../desktop
@@ -75,7 +81,7 @@ npm install
 ../scripts/build-appimage.sh
 ```
 
-Para regenerar o ícone (`desktop/assets/icon.png`):
+Para regenerar o ícone:
 
 ```sh
 python3 desktop/assets/make_icon.py
@@ -83,15 +89,13 @@ python3 desktop/assets/make_icon.py
 
 ## Dependências e licenças
 
-- [pdf.js](https://github.com/mozilla/pdf.js) (Mozilla, Apache License 2.0) —
-  embutido no HTML final, usado apenas para extrair o texto do PDF no
-  próprio navegador do usuário.
-- [Electron](https://www.electronjs.org/) (MIT) — usado só para o wrapper
-  desktop opcional (AppImage); a página em si não depende dele.
+- [pdf.js](https://github.com/mozilla/pdf.js) (Mozilla, Apache License 2.0)
+- [Electron](https://www.electronjs.org/) (MIT) — só no AppImage
+
+Este projeto está sob a [GNU GPLv3](LICENSE).
 
 ## Privacidade
 
-Nenhuma rede é usada em nenhum momento — não há `fetch`, `XMLHttpRequest`
-nem `<script src="...">` externo em lugar nenhum do app. A leitura do PDF
-e a soma dos valores acontecem inteiramente no processo local (navegador
-ou o app Electron).
+Nenhuma rede é usada em nenhum momento. A leitura do PDF e a soma dos
+valores acontecem inteiramente no processo local (navegador ou Electron).
+```

@@ -1,0 +1,5 @@
+node_modules/
+desktop/dist/
+app/node_modules/
+.tools/
+*.AppImage

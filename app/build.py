@@ -1,0 +1,53 @@
+"""
+Gera o arquivo único somador-de-contas.html, embutindo o pdf.js, o worker
+do pdf.js e o ícone do app — tudo inline, para que o resultado funcione
+100% offline (basta abrir o .html, sem servidor e sem internet).
+
+Uso:
+    npm install                 # baixa o pdfjs-dist (só usado no build)
+    python3 build.py
+
+Gera: ./somador-de-contas.html
+"""
+import base64
+import json
+import re
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+PDFJS_DIR = HERE / "node_modules" / "pdfjs-dist" / "build"
+TEMPLATE = HERE / "src" / "template.html"
+ICON = HERE.parent / "desktop" / "assets" / "icon.png"
+OUTPUT = HERE / "somador-de-contas.html"
+
+
+def safe_for_inline_script(js_text: str) -> str:
+    """Break up any literal '</script' sequence so it can't prematurely
+    terminate an HTML <script> element when embedded verbatim. Safe for
+    any JS source: the sequence can only legally appear inside a string,
+    regex or comment, where inserting a backslash is a no-op escape."""
+    return re.sub(r"</(script)", r"<\\/\1", js_text, flags=re.IGNORECASE)
+
+
+def main():
+    pdf_lib = (PDFJS_DIR / "pdf.min.js").read_text(encoding="utf-8")
+    pdf_worker = (PDFJS_DIR / "pdf.worker.min.js").read_text(encoding="utf-8")
+
+    pdf_lib_safe = safe_for_inline_script(pdf_lib)
+    pdf_worker_safe = safe_for_inline_script(pdf_worker)
+    pdf_worker_json = json.dumps(pdf_worker_safe)
+
+    icon_b64 = base64.b64encode(ICON.read_bytes()).decode("ascii")
+    icon_data_uri = "data:image/png;base64," + icon_b64
+
+    html = TEMPLATE.read_text(encoding="utf-8")
+    html = html.replace("__PDFJS_LIB__", pdf_lib_safe)
+    html = html.replace("__PDFJS_WORKER_JSON__", pdf_worker_json)
+    html = html.replace("__APP_ICON_DATA_URI__", icon_data_uri)
+
+    OUTPUT.write_text(html, encoding="utf-8")
+    print(f"wrote {OUTPUT} ({len(html):,} bytes)")
+
+
+if __name__ == "__main__":
+    main()
