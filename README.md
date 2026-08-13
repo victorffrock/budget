@@ -1,101 +1,55 @@
 # Somador de Contas
 
-Soma o valor de boletos em PDF automaticamente. Arraste os arquivos para a
-janela, confira os valores identificados e pronto — sem digitar nada à mão
-(a não ser que o app não consiga ler algum boleto, aí é só corrigir).
+Ferramenta simples para somar valores de boletos e faturas em PDF.
 
-**100% local.** Nenhum arquivo, nem o texto extraído dele, sai do seu
-computador. O pdf.js (biblioteca que lê o PDF) vem embutido dentro do
-próprio `.html` — a página funciona até sem internet.
+Feita para uso pessoal. Não tem grandes pretensões: só evita que você precise digitar os valores um por um. Foi pensada no formato de boletos bancários brasileiros (procura por rótulos como “valor a pagar”, “total a pagar”, “valor cobrado” etc.).
 
-Visual baseado no [GNOME HIG](https://developer.gnome.org/hig/) — paleta,
-tipografia e componentes (boxed list, header bar, status page) seguem as
-diretrizes oficiais do GNOME.
+Tudo roda localmente no seu computador. Nenhum arquivo sai da máquina.
 
 ![Somador de Contas](screenshot.png)
 
 ## Como usar
 
-**Opção 1 — só o navegador, sem instalar nada:**
+**No navegador (sem instalar nada):**
 
-- Abra o arquivo [`index.html`](index.html) no navegador, ou
-- Use [`app/somador-de-contas.html`](app/somador-de-contas.html)
+- Abra o [`index.html`](index.html) ou o [`app/somador-de-contas.html`](app/somador-de-contas.html)
 
-Funciona em qualquer sistema com um navegador moderno.
+Funciona offline.
 
-**Opção 2 — AppImage (Linux), com ícone e janela própria:**
+**AppImage (Linux):**
 
-Baixe o `.AppImage` da [última release](../../releases), dê permissão de
-execução e rode:
+Baixe o `.AppImage` na [página de releases](../../releases), dê permissão e execute:
 
 ```sh
 chmod +x SomadorDeContas-*.AppImage
 ./SomadorDeContas-*.AppImage
-```
 
-Não precisa de FUSE instalado — o runtime já faz fallback automático para
-extrair-e-rodar quando o FUSE não está disponível.
+Não precisa de FUSE.
 
-## Como funciona a leitura dos boletos
+## Observações
 
-O app procura, no texto do PDF, rótulos comuns em boletos e faturas
-brasileiras (`valor a pagar`, `total a pagar`, `valor cobrado`, `valor
-total da fatura`, etc.), cada um com uma pontuação de confiabilidade.
-Quando nenhum rótulo é encontrado, ele só arrisca um palpite (marcado como
-"confira") se houver um valor monetário isolado no documento, ou um valor
-claramente maior que os demais — nunca "o número que mais se repete", que
-pode facilmente ser o valor errado num boleto com desconto/juros
-detalhados.
+Os valores encontrados são editáveis. Se a leitura falhar em algum boleto, é só corrigir na hora.
+Cada linha mostra um indicador de confiança (✓ / ⚠ / ?).
+Não é perfeito. Boletos muito diferentes do padrão brasileiro podem precisar de ajuste manual.
 
-Todo valor mostrado é editável com um clique, e cada linha tem um
-indicador (✓ / ⚠ / ?) mostrando o quão confiável foi a identificação.
+## Privacidade
 
-## Estrutura do repositório
+Nada é enviado para a internet. A leitura do PDF e a soma acontecem só no seu computador.
 
-```
-app/
-  src/template.html      – HTML/CSS/JS fonte (com placeholders de build)
-  build.py               – embute o pdf.js + worker + ícone → HTML final
-  somador-de-contas.html – build pronto para usar
-desktop/
-  main.js                – wrapper Electron (janela, ícone, menu)
-  preload.js             – ponte segura para minimizar/fechar a janela
-  package.json           – config do electron-builder
-  assets/icon.png        – ícone do app
-scripts/
-  build-appimage.sh      – gera o AppImage com o runtime sem FUSE
-index.html               – mesma versão web, na raiz (atalho)
-```
+## Compilando do código-fonte
 
-## Recompilando a partir do código-fonte
 
-```sh
-# 1. gerar o HTML autocontido
+### 1. Gerar o HTML
 cd app
 npm install
 python3 build.py
 
-# 2. (opcional) empacotar como AppImage
+
+### 2. (opcional) Gerar o AppImage
 cd ../desktop
 npm install
 ../scripts/build-appimage.sh
-```
 
-Para regenerar o ícone:
-
-```sh
-python3 desktop/assets/make_icon.py
-```
-
-## Dependências e licenças
-
-- [pdf.js](https://github.com/mozilla/pdf.js) (Mozilla, Apache License 2.0)
-- [Electron](https://www.electronjs.org/) (MIT) — só no AppImage
-
-Este projeto está sob a [GNU GPLv3](LICENSE).
-
-## Privacidade
-
-Nenhuma rede é usada em nenhum momento. A leitura do PDF e a soma dos
-valores acontecem inteiramente no processo local (navegador ou Electron).
-```
+## Licença
+GNU GPLv3.
+Usa pdf.js (Apache 2.0) e, no AppImage, Electron (MIT).
