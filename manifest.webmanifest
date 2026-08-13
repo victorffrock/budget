@@ -1,0 +1,18 @@
+{
+  "name": "Somador de Contas",
+  "short_name": "Somador",
+  "description": "Soma o valor de boletos e faturas em PDF, tudo localmente.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f5f4",
+  "theme_color": "#f6f5f4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
