@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFilter
+from pathlib import Path
 
 SCALE = 8
 S = 128 * SCALE
@@ -21,15 +22,13 @@ bottom = S - margin
 radius = px(28)
 profile_h = px(5)
 
-# 1) darker "front face" shape: same rounded rect, shifted down. Drawn first,
-#    so only a thin sliver peeks out beneath the top face -> subtle perspective.
+# 1) darker "front face" shape
 front = Image.new("RGBA", (S,S), (0,0,0,0))
 ImageDraw.Draw(front).rounded_rectangle(
     [left, top+profile_h, right, bottom+profile_h], radius=radius, fill=BLUE_5)
 img.alpha_composite(front)
 
-# 2) top face: vertical gradient (curved surface -> gradient allowed), clipped
-#    to the rounded rect at the normal (non-shifted) position.
+# 2) top face with gradient
 canvas = Image.new("RGBA", (S,S), (0,0,0,0))
 cd = ImageDraw.Draw(canvas)
 for y in range(top, bottom):
@@ -44,7 +43,7 @@ img.paste(canvas, (0,0), mask)
 
 draw = ImageDraw.Draw(img)
 
-# --- symbol: simple receipt shape, centered, flat colors ---
+# symbol: receipt
 r_w = px(46); r_h = px(56)
 r_cx = S/2
 r_top = top + px(20)
@@ -85,5 +84,6 @@ draw.line([(badge_cx-px(5), badge_cy), (badge_cx-px(1.5), badge_cy+px(4))], fill
 draw.line([(badge_cx-px(1.5), badge_cy+px(4)), (badge_cx+px(5.5), badge_cy-px(4.5))], fill=LIGHT_1, width=cw)
 
 final = img.resize((512,512), Image.LANCZOS)
-final.save("/home/claude/somador-app/assets/icon.png")
-print("saved", final.size)
+out = Path(__file__).resolve().parent / "icon.png"
+final.save(out)
+print("saved", final.size, "→", out)

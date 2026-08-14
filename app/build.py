@@ -48,6 +48,22 @@ def main():
     OUTPUT.write_text(html, encoding="utf-8")
     print(f"wrote {OUTPUT} ({len(html):,} bytes)")
 
+    # Também atualiza o index.html da raiz (versão web + PWA)
+    root_index = HERE.parent / "index.html"
+    pwa_head = """<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f6f5f4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Somador de Contas">
+"""
+    if 'rel="manifest"' not in html:
+        html = html.replace("</title>", "</title>\n" + pwa_head, 1)
+    root_index.write_text(html, encoding="utf-8")
+    print(f"wrote {root_index} ({len(html):,} bytes)")
+
 
 if __name__ == "__main__":
     main()
