@@ -12,9 +12,9 @@ Tudo roda localmente no seu computador. Nenhum arquivo sai da máquina.
 
 **No navegador (sem instalar nada):**
 
-- Abra o [`index.html`](index.html) ou o [`app/somador-de-contas.html`](app/somador-de-contas.html)
+- Abra o [index.html](index.html) ou o [app/somador-de-contas.html](app/somador-de-contas.html).
 
-Funciona offline.
+Funciona offline. Confira valores identificados com baixa confiança antes de pagar.
 
 **AppImage (Linux):**
 
@@ -23,13 +23,18 @@ Baixe o `.AppImage` na [página de releases](../../releases), dê permissão e e
 ```sh
 chmod +x SomadorDeContas-*.AppImage
 ./SomadorDeContas-*.AppImage
+```
 
-Não precisa de FUSE.
+Se a distribuição não tiver FUSE, execute:
+
+```sh
+./SomadorDeContas-*.AppImage --appimage-extract-and-run
+```
 
 ## Observações
 
-Os valores encontrados são editáveis. Se a leitura falhar em algum boleto, é só corrigir na hora.
-Cada linha mostra um indicador de confiança (✓ / ⚠ / ?).
+Os valores encontrados são editáveis. A edição aceita somente números brasileiros, como `123,45` ou `1.234,56`; uma entrada inválida preserva o valor anterior. Cada linha mostra um indicador de confiança (✓ / ⚠ / ?).
+
 Não é perfeito. Boletos muito diferentes do padrão brasileiro podem precisar de ajuste manual.
 
 ## Privacidade
@@ -38,18 +43,27 @@ Nada é enviado para a internet. A leitura do PDF e a soma acontecem só no seu 
 
 ## Compilando do código-fonte
 
+Pré-requisitos: Node.js 22.13 ou superior e Python 3.
 
 ### 1. Gerar o HTML
+
+```sh
 cd app
 npm install
-python3 build.py
+npm test
+npm run build
+```
 
+Isso atualiza `app/somador-de-contas.html` e `index.html`.
 
-### 2. (opcional) Gerar o AppImage
+### 2. Gerar o AppImage
+
+```sh
 cd ../desktop
 npm install
 ../scripts/build-appimage.sh
+```
 
 ## Licença
-GNU GPLv3.
-Usa pdf.js (Apache 2.0) e, no AppImage, Electron (MIT).
+
+GNU GPLv3. Usa pdf.js (Apache 2.0) e, no AppImage, Electron (MIT).
