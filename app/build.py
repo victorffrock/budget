@@ -20,6 +20,7 @@ TEMPLATE = HERE / "src" / "template.html"
 CORE = HERE / "src" / "core.js"
 ICON = HERE.parent / "desktop" / "assets" / "icon.png"
 OUTPUT = HERE / "somador-de-contas.html"
+PACKAGE = HERE / "package.json"
 
 
 def safe_for_inline_script(js_text: str) -> str:
@@ -40,6 +41,7 @@ def main():
     core_safe = safe_for_inline_script(core)
     pdf_lib_json = json.dumps(pdf_lib_safe)
     pdf_worker_json = json.dumps(pdf_worker_safe)
+    version = json.loads(PACKAGE.read_text(encoding="utf-8"))["version"]
 
     icon_b64 = base64.b64encode(ICON.read_bytes()).decode("ascii")
     icon_data_uri = "data:image/png;base64," + icon_b64
@@ -49,6 +51,7 @@ def main():
     html = html.replace("__PDFJS_LIB_JSON__", pdf_lib_json)
     html = html.replace("__PDFJS_WORKER_JSON__", pdf_worker_json)
     html = html.replace("__APP_ICON_DATA_URI__", icon_data_uri)
+    html = html.replace("__APP_VERSION__", version)
 
     OUTPUT.write_text(html, encoding="utf-8")
     print(f"wrote {OUTPUT} ({len(html):,} bytes)")

@@ -7,10 +7,11 @@
   },
   "scripts": {
     "build": "python3 build.py",
-    "test": "node --test"
+    "test": "node --test",
+    "verify": "node verify-build.js"
   },
   "devDependencies": {
     "pdfjs-dist": "6.2.108"
   },
-  "version": "3.1.0"
+  "version": "3.2.0"
 }
