@@ -1,0 +1,18 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const template = fs.readFileSync(path.join(__dirname, '..', 'src', 'template.html'), 'utf8');
+
+test('oferece menu e diálogos acessíveis seguindo a experiência GNOME', () => {
+  assert.match(template, /aria-haspopup="menu"/);
+  assert.match(template, /role="menu"/);
+  assert.match(template, /role="dialog" aria-modal="true"/);
+  assert.match(template, /Sobre o Somador de Contas/);
+  assert.match(template, /Gear Lever/);
+});
+
+test('mantém uma versão explícita para o diálogo Sobre', () => {
+  assert.match(template, /Versão __APP_VERSION__/);
+});

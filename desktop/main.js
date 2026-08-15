@@ -1,7 +1,19 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
+const { createApplicationMenuTemplate } = require('./menu');
 
-Menu.setApplicationMenu(null);
+function sendAppAction(action) {
+  const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  if (win) win.webContents.send('somador:action', action);
+}
+
+function installApplicationMenu() {
+  const menu = Menu.buildFromTemplate(createApplicationMenuTemplate({
+    onAction: sendAppAction,
+    onQuit: () => app.quit()
+  }));
+  Menu.setApplicationMenu(menu);
+}
 
 function createWindow() {
   const preloadPath = app.isPackaged
@@ -44,6 +56,7 @@ ipcMain.on('window-close', (event) => {
 });
 
 app.whenReady().then(() => {
+  installApplicationMenu();
   createWindow();
 
   app.on('activate', () => {

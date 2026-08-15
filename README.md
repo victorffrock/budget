@@ -27,6 +27,16 @@ chmod +x Somador-de-Contas-*-x86_64.AppImage
 
 O AppImage usa runtime estático e não requer FUSE.
 
+### Experiência GNOME
+
+O AppImage usa uma barra de cabeçalho e menu de aplicativo no estilo GNOME. No botão de menu estão o manual integrado, a tela **Sobre** e as ações de adicionar ou limpar contas. No Linux, essas mesmas ações também aparecem no menu nativo **Arquivo** e **Ajuda**.
+
+Atalhos disponíveis:
+
+- `Ctrl+O`: adicionar boletos;
+- `F1`: abrir o manual;
+- `Esc`: fechar o menu ou uma janela auxiliar.
+
 ### Atualizações pelo Gear Lever
 
 A partir da versão 3.1.0, o AppImage traz os dados de atualização do GitHub incorporados. Abra a versão 3.1.0 ou posterior no Gear Lever e integre-a ao menu de aplicações. Depois disso, o próprio Gear Lever identifica e instala as próximas releases automaticamente.
@@ -49,9 +59,10 @@ Pré-requisitos: Node.js 22.13 ou superior e Python 3. Para gerar o arquivo `.zs
 
 ```sh
 cd app
-npm install
+npm ci
 npm test
 npm run build
+npm run verify
 ```
 
 Isso atualiza `app/somador-de-contas.html` e `index.html`.
@@ -60,7 +71,8 @@ Isso atualiza `app/somador-de-contas.html` e `index.html`.
 
 ```sh
 cd ../desktop
-npm install
+npm ci
+npm test
 ../scripts/build-appimage.sh
 ```
 
