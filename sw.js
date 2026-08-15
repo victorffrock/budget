@@ -1,6 +1,6 @@
 // Service Worker do Somador de Contas — somente recursos seguros para cache.
 const CACHE_PREFIX = 'somador-de-contas-';
-const CACHE_NAME = CACHE_PREFIX + 'v4';
+const CACHE_NAME = CACHE_PREFIX + 'v5';
 
 const ASSETS = [
   './',
