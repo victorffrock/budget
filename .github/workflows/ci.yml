@@ -20,10 +20,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: app/package.json
-      - run: npm install --ignore-scripts
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run build
+      - run: npm run verify
+      - run: git diff --exit-code -- somador-de-contas.html ../index.html
       - run: node --check ../sw.js
 
   desktop:
@@ -38,8 +41,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: desktop/package.json
-      - run: npm install --ignore-scripts
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm test
       - run: npm audit --audit-level=high
 
   appimage:
@@ -54,26 +58,31 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            app/package.json
-            desktop/package.json
+            app/package-lock.json
+            desktop/package-lock.json
       - name: Instalar zsync
         run: |
           sudo apt-get update
           sudo apt-get install --yes zsync
       - name: Instalar dependências da aplicação
         working-directory: app
-        run: npm install --ignore-scripts
+        run: npm ci --ignore-scripts
       - name: Gerar HTML offline
         working-directory: app
-        run: npm run build
+        run: |
+          npm run build
+          npm run verify
+          git diff --exit-code -- somador-de-contas.html ../index.html
       - name: Instalar dependências do desktop
         working-directory: desktop
-        run: npm install
+        run: npm ci
       - name: Gerar e validar AppImage
         run: |
           ./scripts/build-appimage.sh
+          cmp app/somador-de-contas.html desktop/index.html
           appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
           test -n "$appimage"
+          test -x "$appimage"
           test -s "$appimage.zsync"
           docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
             -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
