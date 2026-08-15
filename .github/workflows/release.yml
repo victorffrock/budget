@@ -2,7 +2,9 @@ name: Publicar AppImage
 
 on:
   release:
-    types: [created]
+    # Rascunhos não devem gerar artefatos. A publicação é o momento em que a
+    # tag fica pública e o AppImage pode ser anexado à release correta.
+    types: [published]
 
 permissions:
   contents: write
@@ -15,7 +17,7 @@ jobs:
       APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

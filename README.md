@@ -53,6 +53,8 @@ A partir da versão 4.0, se o PDF não tiver texto selecionável — por exemplo
 
 Como toda leitura de imagem pode confundir caracteres, qualquer valor obtido por OCR aparece com o indicador amarelo e deve ser conferido antes do pagamento. Para proteger a memória do computador, o OCR é oferecido para arquivos de até 25 MB; documentos maiores ainda podem ter o valor informado manualmente.
 
+As regras que interpretam o texto do OCR possuem casos de teste sanitizados, incluindo rótulos com ruído e valores conflitantes. Isso ajuda a evitar que uma alteração futura escolha um valor ambíguo automaticamente.
+
 ## Privacidade
 
 Nada é enviado para a internet. A leitura do PDF, o OCR e a soma acontecem só no seu computador.
