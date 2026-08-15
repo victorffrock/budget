@@ -80,7 +80,7 @@ chmod +x "$APPIMAGETOOL"
 REPACKED_APPIMAGE="$WORK_DIR/$(basename "$APPIMAGE")"
 APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" \
   --runtime-file "$STATIC_RUNTIME" \
-  --comp gzip \
+  --comp zstd \
   --updateinformation "$APPIMAGE_UPDATE_INFORMATION" \
   "$WORK_DIR/squashfs-root" "$REPACKED_APPIMAGE"
 
