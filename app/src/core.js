@@ -107,9 +107,23 @@
     return result;
   }
 
+  function shouldUseOcr(result) {
+    return !result || result.amount === null;
+  }
+
+  function extractFromOcrText(fullText) {
+    var result = extractFromText(fullText);
+    // OCR pode confundir caracteres parecidos, como 0/O e 1/I. Mesmo quando
+    // encontra um rótulo conhecido, o valor precisa de uma conferência humana.
+    if (result.amount !== null) result.confidence = 'warn';
+    return result;
+  }
+
   return Object.freeze({
+    extractFromOcrText: extractFromOcrText,
     extractFromText: extractFromText,
     normalizeText: normalizeText,
-    parseBRLNumber: parseBRLNumber
+    parseBRLNumber: parseBRLNumber,
+    shouldUseOcr: shouldUseOcr
   });
 });
