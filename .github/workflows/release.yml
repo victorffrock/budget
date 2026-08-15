@@ -55,7 +55,11 @@ jobs:
             -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
             "/dist/$(basename "$appimage")" --appimage-updateinformation)"
           test "$update_info" = "$APPIMAGE_UPDATE_INFORMATION"
+      - name: Gerar checksums
+        run: |
+          cd desktop/dist
+          sha256sum *.AppImage *.AppImage.zsync > SHA256SUMS.txt
       - name: Anexar AppImage e metadados de atualização
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/*.AppImage desktop/dist/*.AppImage.zsync --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/*.AppImage desktop/dist/*.AppImage.zsync desktop/dist/SHA256SUMS.txt --clobber
