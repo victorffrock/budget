@@ -17,7 +17,7 @@ jobs:
       APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
