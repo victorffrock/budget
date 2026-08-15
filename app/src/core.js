@@ -53,6 +53,7 @@
     ];
 
     var candidates = [];
+    var hasConflictingBestCandidates = false;
     for (var i = 0; i < rules.length; i++) {
       var flags = rules[i].re.multiline ? 'gim' : 'gi';
       var matcher = new RegExp(rules[i].re.source, flags);
@@ -74,10 +75,12 @@
       if (Object.keys(distinctTied).length === 1) {
         result.amount = best.amount;
         result.confidence = best.score >= 90 ? 'ok' : 'warn';
+      } else {
+        hasConflictingBestCandidates = true;
       }
     }
 
-    if (result.amount === null) {
+    if (result.amount === null && !hasConflictingBestCandidates) {
       var all = norm.match(new RegExp(numPattern, 'g')) || [];
       var unique = {};
       all.forEach(function (candidate) {
