@@ -1,6 +1,6 @@
 {
   "name": "somador-de-contas",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Soma o valor de boletos em PDF, tudo processado localmente no seu computador. Visual baseado no GNOME HIG.",
   "author": "Victor Ferreira Franco",
   "main": "main.js",
@@ -20,6 +20,7 @@
     "toolsets": {
       "appimage": "1.0.3"
     },
+    "artifactName": "Somador-de-Contas-${version}-x86_64.${ext}",
     "appId": "br.com.victorferreirafranco.somadordecontas",
     "productName": "Somador de Contas",
     "files": [

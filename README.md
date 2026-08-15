@@ -21,11 +21,15 @@ Funciona offline. Confira valores identificados com baixa confiança antes de pa
 Baixe o `.AppImage` na [página de releases](../../releases), dê permissão e execute:
 
 ```sh
-chmod +x Somador.de.Contas-*.AppImage
-./Somador.de.Contas-*.AppImage
+chmod +x Somador-de-Contas-*-x86_64.AppImage
+./Somador-de-Contas-*-x86_64.AppImage
 ```
 
-A partir da versão 3.0.1, o AppImage usa runtime estático e não requer FUSE.
+O AppImage usa runtime estático e não requer FUSE.
+
+### Atualizações pelo Gear Lever
+
+A partir da versão 3.1.0, o AppImage traz os dados de atualização do GitHub incorporados. Abra a versão 3.1.0 ou posterior no Gear Lever e integre-a ao menu de aplicações. Depois disso, o próprio Gear Lever identifica e instala as próximas releases automaticamente.
 
 ## Observações
 
@@ -39,7 +43,7 @@ Nada é enviado para a internet. A leitura do PDF e a soma acontecem só no seu 
 
 ## Compilando do código-fonte
 
-Pré-requisitos: Node.js 22.13 ou superior e Python 3.
+Pré-requisitos: Node.js 22.13 ou superior e Python 3. Para gerar o arquivo `.zsync` de atualização, instale também `zsync`.
 
 ### 1. Gerar o HTML
 
@@ -57,6 +61,13 @@ Isso atualiza `app/somador-de-contas.html` e `index.html`.
 ```sh
 cd ../desktop
 npm install
+../scripts/build-appimage.sh
+```
+
+Para uma release deste repositório, use:
+
+```sh
+APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync' \
 ../scripts/build-appimage.sh
 ```
 
