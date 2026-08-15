@@ -39,7 +39,7 @@ if [ "$1" = "dist/*.AppImage" ]; then
   exit 1
 fi
 
-APPIMAGE="$1"
+APPIMAGE="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 
 if [ -z "${APPIMAGE_UPDATE_INFORMATION:-}" ]; then
   echo
