@@ -78,11 +78,14 @@ chmod +x "$APPIMAGETOOL"
 )
 
 REPACKED_APPIMAGE="$WORK_DIR/$(basename "$APPIMAGE")"
-APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" \
-  --runtime-file "$STATIC_RUNTIME" \
-  --comp zstd \
-  --updateinformation "$APPIMAGE_UPDATE_INFORMATION" \
-  "$WORK_DIR/squashfs-root" "$REPACKED_APPIMAGE"
+(
+  cd "$WORK_DIR"
+  APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" \
+    --runtime-file "$STATIC_RUNTIME" \
+    --comp zstd \
+    --updateinformation "$APPIMAGE_UPDATE_INFORMATION" \
+    "$WORK_DIR/squashfs-root" "$(basename "$REPACKED_APPIMAGE")"
+)
 
 test -s "$REPACKED_APPIMAGE"
 test -s "$REPACKED_APPIMAGE.zsync"
