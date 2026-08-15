@@ -11,5 +11,6 @@
   },
   "devDependencies": {
     "pdfjs-dist": "6.2.108"
-  }
+  },
+  "version": "3.0.0"
 }
