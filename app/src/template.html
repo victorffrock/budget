@@ -428,17 +428,22 @@
 </div>
 
 <script>
-/* ======================= pdf.js (embedded, offline) ======================= */
-__PDFJS_LIB__
+/* ========================= application core ========================= */
+__CORE_JS__
 </script>
 <script>
-/* ======================= pdf.js worker source (embedded, offline) ======================= */
+/* ======================= pdf.js modules (embedded, offline) ======================= */
+window.__PDFJS_LIB_SRC__ = __PDFJS_LIB_JSON__;
 window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
 </script>
-<script>
-(function(){
+<script type="module">
+(async function(){
   "use strict";
 
+  var pdfModuleURL = URL.createObjectURL(
+    new Blob([window.__PDFJS_LIB_SRC__], {type:'application/javascript'})
+  );
+  var pdfjsLib = await import(pdfModuleURL);
   var workerBlob = new Blob([window.__PDF_WORKER_SRC__], {type:'application/javascript'});
   pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
 
@@ -480,97 +485,11 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
     return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
-  function parseBRLNumber(str){
-    if(!str) return null;
-    var cleaned = String(str).trim().replace(/[^0-9.,]/g,'');
-    if(!cleaned) return null;
-    if(cleaned.indexOf(',') !== -1){
-      cleaned = cleaned.replace(/\./g,'').replace(',', '.');
-    }
-    var n = parseFloat(cleaned);
-    return isNaN(n) ? null : n;
-  }
+  var parseBRLNumber = window.SomadorCore.parseBRLNumber;
+  var normalizeText = window.SomadorCore.normalizeText;
+  var extractFromText = window.SomadorCore.extractFromText;
 
-  function normalizeText(text){
-    return String(text || '')
-      .replace(/\u00a0/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
-  function extractFromText(fullText){
-    var result = { amount:null, confidence:'err', due:null };
-    var norm = normalizeText(fullText);
-
-    var numPattern = '(?<!\\d)(\\d{1,3}(?:\\.\\d{3})*,\\d{2})(?!\\d)';
-    var gap = '[^0-9a-zà-ú]{0,12}(?:r\\$[^0-9a-zà-ú]{0,12})?';
-
-    var rules = [
-      { score:100, re:new RegExp('valor\\s*a\\s*pagar' + gap + numPattern, 'i') },
-      { score:98,  re:new RegExp('total\\s*a\\s*pagar' + gap + numPattern, 'i') },
-      { score:96,  re:new RegExp('valor\\s*cobrado' + gap + numPattern, 'i') },
-      { score:94,  re:new RegExp('pagamento\\s*total\\s*da\\s*fatura' + gap + numPattern, 'i') },
-      { score:92,  re:new RegExp('valor\\s*total\\s*da\\s*fatura' + gap + numPattern, 'i') },
-      { score:90,  re:new RegExp('total\\s*da\\s*fatura' + gap + numPattern, 'i') },
-      { score:88,  re:new RegExp('total\\s*desta\\s*fatura' + gap + numPattern, 'i') },
-      { score:80,  re:new RegExp('valor\\s*total' + gap + numPattern, 'i') },
-      { score:78,  re:new RegExp('total\\s*geral' + gap + numPattern, 'i') },
-      { score:65,  re:new RegExp('valor\\s*do\\s*documento' + gap + numPattern, 'i') },
-      { score:50,  re:new RegExp('^\\s*valor' + gap + numPattern, 'im') }
-    ];
-
-    var candidates = [];
-    for(var i=0;i<rules.length;i++){
-      var m = norm.match(rules[i].re);
-      if(m){
-        var amount = parseBRLNumber(m[1]);
-        if(typeof amount === 'number' && isFinite(amount)){
-          candidates.push({ amount:amount, score:rules[i].score });
-        }
-      }
-    }
-
-    if(candidates.length){
-      candidates.sort(function(a,b){ return b.score - a.score; });
-      var best = candidates[0];
-      var tied = candidates.filter(function(c){ return c.score === best.score; });
-      var distinctTied = {};
-      tied.forEach(function(c){ distinctTied[c.amount.toFixed(2)] = true; });
-      if(Object.keys(distinctTied).length === 1){
-        result.amount = best.amount;
-        result.confidence = best.score >= 90 ? 'ok' : 'warn';
-      }
-    }
-
-    if(result.amount === null){
-      var all = norm.match(new RegExp(numPattern,'g')) || [];
-      var unique = {};
-      all.forEach(function(v){
-        var n = parseBRLNumber(v);
-        if(typeof n === 'number' && isFinite(n) && n >= 1) unique[n.toFixed(2)] = n;
-      });
-      var keys = Object.keys(unique);
-      if(keys.length === 1){
-        result.amount = unique[keys[0]];
-        result.confidence = 'warn';
-      } else if(keys.length > 1){
-        var sorted = keys.map(function(k){ return unique[k]; }).sort(function(a,b){ return b-a; });
-        if(sorted[0] > sorted[1] * 1.5){
-          result.amount = sorted[0];
-          result.confidence = 'warn';
-        }
-      }
-    }
-
-    var dueMatch = norm.match(/vencimento[^0-9]{0,15}(\d{2}\/\d{2}\/\d{4})/i);
-    if(dueMatch) result.due = dueMatch[1];
-
-    return result;
-  }
-    async function readPdfText(file){
+  async function readPdfText(file){
     var buf = await file.arrayBuffer();
     // isEvalSupported: false mitiga a vulnerabilidade de execução de JS
     // em PDFs maliciosos (CVE-2024-4367), mesmo em versões antigas do pdf.js.
