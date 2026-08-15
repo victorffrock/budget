@@ -2,7 +2,9 @@ name: Publicar AppImage
 
 on:
   release:
-    types: [created]
+    # Rascunhos não devem gerar artefatos. A publicação é o momento em que a
+    # tag fica pública e o AppImage pode ser anexado à release correta.
+    types: [published]
 
 permissions:
   contents: write

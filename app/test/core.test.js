@@ -1,11 +1,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   extractFromOcrText,
   extractFromText,
   parseBRLNumber,
   shouldUseOcr
 } = require('../src/core.js');
+
+function readOcrFixture(name) {
+  return fs.readFileSync(path.join(__dirname, 'fixtures', 'ocr', name), 'utf8');
+}
 
 test('aceita valores brasileiros bem formatados', () => {
   assert.equal(parseBRLNumber('R$ 1.234,56'), 1234.56);
@@ -41,5 +47,19 @@ test('resultados do OCR sempre pedem conferência', () => {
   assert.deepEqual(
     extractFromOcrText('Vencimento 12/09/2026\nValor a pagar R$ 987,65'),
     { amount: 987.65, confidence: 'warn', due: '12/09/2026' }
+  );
+});
+
+test('reconhece uma saída de OCR com ruído no rótulo e preserva a data', () => {
+  assert.deepEqual(
+    extractFromOcrText(readOcrFixture('valor-com-ruido.txt')),
+    { amount: 1234.56, confidence: 'warn', due: '05/10/2026' }
+  );
+});
+
+test('não escolhe um valor de OCR quando rótulos equivalentes divergem', () => {
+  assert.deepEqual(
+    extractFromOcrText(readOcrFixture('valores-ambiguos.txt')),
+    { amount: null, confidence: 'err', due: '05/10/2026' }
   );
 });

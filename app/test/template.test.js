@@ -23,4 +23,6 @@ test('oferece OCR local como alternativa para PDFs escaneados', () => {
   assert.match(template, /__TESSERACT_WORKER_JSON__/);
   assert.match(template, /Leitura por OCR/);
   assert.match(template, /Cancelar leitura/);
+  assert.match(template, /var MAX_OCR_PAGES = 4;/);
+  assert.match(template, /var MAX_OCR_FILE_BYTES = 25 \* 1024 \* 1024;/);
 });
