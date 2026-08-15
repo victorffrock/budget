@@ -11,6 +11,8 @@ jobs:
   appimage:
     name: Gerar AppImage
     runs-on: ubuntu-latest
+    env:
+      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,6 +22,10 @@ jobs:
           cache-dependency-path: |
             app/package.json
             desktop/package.json
+      - name: Instalar zsync
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes zsync
       - name: Instalar dependências da aplicação
         working-directory: app
         run: npm install --ignore-scripts
@@ -31,14 +37,19 @@ jobs:
         run: npm install
       - name: Gerar AppImage
         run: ./scripts/build-appimage.sh
-      - name: Verificar runtime sem FUSE
+      - name: Validar atualização sem FUSE
         run: |
           appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
           test -n "$appimage"
+          test -s "$appimage.zsync"
           docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
             -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
             "/dist/$(basename "$appimage")" --appimage-version
-      - name: Anexar AppImage à release
+          update_info="$(docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
+            -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
+            "/dist/$(basename "$appimage")" --appimage-updateinformation)"
+          test "$update_info" = "$APPIMAGE_UPDATE_INFORMATION"
+      - name: Anexar AppImage e metadados de atualização
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/*.AppImage --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/*.AppImage desktop/dist/*.AppImage.zsync --clobber

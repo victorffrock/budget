@@ -41,3 +41,44 @@ jobs:
           cache-dependency-path: desktop/package.json
       - run: npm install --ignore-scripts
       - run: npm audit --audit-level=high
+
+  appimage:
+    name: AppImage atualizável
+    runs-on: ubuntu-latest
+    env:
+      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package.json
+            desktop/package.json
+      - name: Instalar zsync
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes zsync
+      - name: Instalar dependências da aplicação
+        working-directory: app
+        run: npm install --ignore-scripts
+      - name: Gerar HTML offline
+        working-directory: app
+        run: npm run build
+      - name: Instalar dependências do desktop
+        working-directory: desktop
+        run: npm install
+      - name: Gerar e validar AppImage
+        run: |
+          ./scripts/build-appimage.sh
+          appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
+          test -n "$appimage"
+          test -s "$appimage.zsync"
+          docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
+            -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
+            "/dist/$(basename "$appimage")" --appimage-version
+          update_info="$(docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
+            -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
+            "/dist/$(basename "$appimage")" --appimage-updateinformation)"
+          test "$update_info" = "$APPIMAGE_UPDATE_INFORMATION"
