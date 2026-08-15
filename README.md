@@ -21,15 +21,11 @@ Funciona offline. Confira valores identificados com baixa confiança antes de pa
 Baixe o `.AppImage` na [página de releases](../../releases), dê permissão e execute:
 
 ```sh
-chmod +x SomadorDeContas-*.AppImage
-./SomadorDeContas-*.AppImage
+chmod +x Somador.de.Contas-*.AppImage
+./Somador.de.Contas-*.AppImage
 ```
 
-Se a distribuição não tiver FUSE, execute:
-
-```sh
-./SomadorDeContas-*.AppImage --appimage-extract-and-run
-```
+A partir da versão 3.0.1, o AppImage usa runtime estático e não requer FUSE.
 
 ## Observações
 

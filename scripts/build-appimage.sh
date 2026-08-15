@@ -1,11 +1,11 @@
 #!/bin/sh
-# Gera o AppImage a partir de desktop/ sem baixar nem executar binários externos.
+# Gera o AppImage a partir de desktop/ com runtime estático (sem dependência de FUSE).
 #
 # Uso:
 #   cd app && npm install && npm run build && cd ..
 #   cd desktop && npm install && ../scripts/build-appimage.sh
 #
-# Resultado: desktop/dist/Somador de Contas-<versao>.AppImage
+# Resultado: desktop/dist/*.AppImage
 
 set -eu
 
@@ -26,7 +26,7 @@ fi
 cp -f "$HTML_SRC" ./index.html
 echo "==> HTML copiado para desktop/index.html ($(wc -c < index.html) bytes)"
 
-echo "==> Gerando AppImage com electron-builder"
+echo "==> Gerando AppImage com runtime estático"
 npm run dist
 
 set -- dist/*.AppImage
@@ -37,4 +37,3 @@ fi
 
 echo
 echo "Pronto: $1"
-echo "Sem FUSE, execute: $1 --appimage-extract-and-run"
