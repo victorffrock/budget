@@ -17,6 +17,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PDFJS_DIR = HERE / "node_modules" / "pdfjs-dist" / "build"
 TEMPLATE = HERE / "src" / "template.html"
+CORE = HERE / "src" / "core.js"
 ICON = HERE.parent / "desktop" / "assets" / "icon.png"
 OUTPUT = HERE / "somador-de-contas.html"
 
@@ -30,18 +31,22 @@ def safe_for_inline_script(js_text: str) -> str:
 
 
 def main():
-    pdf_lib = (PDFJS_DIR / "pdf.min.js").read_text(encoding="utf-8")
-    pdf_worker = (PDFJS_DIR / "pdf.worker.min.js").read_text(encoding="utf-8")
+    pdf_lib = (PDFJS_DIR / "pdf.min.mjs").read_text(encoding="utf-8")
+    pdf_worker = (PDFJS_DIR / "pdf.worker.min.mjs").read_text(encoding="utf-8")
+    core = CORE.read_text(encoding="utf-8")
 
     pdf_lib_safe = safe_for_inline_script(pdf_lib)
     pdf_worker_safe = safe_for_inline_script(pdf_worker)
+    core_safe = safe_for_inline_script(core)
+    pdf_lib_json = json.dumps(pdf_lib_safe)
     pdf_worker_json = json.dumps(pdf_worker_safe)
 
     icon_b64 = base64.b64encode(ICON.read_bytes()).decode("ascii")
     icon_data_uri = "data:image/png;base64," + icon_b64
 
     html = TEMPLATE.read_text(encoding="utf-8")
-    html = html.replace("__PDFJS_LIB__", pdf_lib_safe)
+    html = html.replace("__CORE_JS__", core_safe)
+    html = html.replace("__PDFJS_LIB_JSON__", pdf_lib_json)
     html = html.replace("__PDFJS_WORKER_JSON__", pdf_worker_json)
     html = html.replace("__APP_ICON_DATA_URI__", icon_data_uri)
 
