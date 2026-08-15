@@ -31,6 +31,13 @@ jobs:
         run: npm install
       - name: Gerar AppImage
         run: ./scripts/build-appimage.sh
+      - name: Verificar runtime sem FUSE
+        run: |
+          appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
+          test -n "$appimage"
+          docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
+            -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
+            "/dist/$(basename "$appimage")" --appimage-version
       - name: Anexar AppImage à release
         env:
           GH_TOKEN: ${{ github.token }}
