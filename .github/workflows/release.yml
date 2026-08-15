@@ -1,0 +1,37 @@
+name: Publicar AppImage
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    name: Gerar AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package.json
+            desktop/package.json
+      - name: Instalar dependências da aplicação
+        working-directory: app
+        run: npm install --ignore-scripts
+      - name: Gerar HTML offline
+        working-directory: app
+        run: npm run build
+      - name: Instalar dependências do desktop
+        working-directory: desktop
+        run: npm install
+      - name: Gerar AppImage
+        run: ./scripts/build-appimage.sh
+      - name: Anexar AppImage à release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/*.AppImage --clobber

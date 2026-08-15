@@ -1,7 +1,6 @@
-// Service Worker do Somador de Contas — cache básico para funcionar offline
-// Prefixo exclusivo: não apaga caches de outras páginas na mesma origem
+// Service Worker do Somador de Contas — somente recursos seguros para cache.
 const CACHE_PREFIX = 'somador-de-contas-';
-const CACHE_NAME = CACHE_PREFIX + 'v3';
+const CACHE_NAME = CACHE_PREFIX + 'v4';
 
 const ASSETS = [
   './',
@@ -10,10 +9,16 @@ const ASSETS = [
   './manifest.webmanifest'
 ];
 
+function saveResponse(request, response) {
+  if (!response || response.status !== 200 || response.type !== 'basic') {
+    return Promise.resolve();
+  }
+
+  return caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -22,8 +27,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
       )
     )
   );
@@ -31,23 +36,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
   const isNavigationOrHtml =
     event.request.mode === 'navigate' ||
     url.pathname.endsWith('/') ||
-    url.pathname.endsWith('/index.html') ||
-    url.pathname.endsWith('index.html');
+    url.pathname.endsWith('/index.html');
 
   if (isNavigationOrHtml) {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
+        .then((response) => saveResponse(event.request, response).catch(() => {}).then(() => response))
         .catch(() =>
           caches.match(event.request).then((cached) => cached || caches.match('./index.html'))
         )
@@ -57,19 +57,11 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request)
-          .then((response) => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-            return response;
-          })
-          .catch(() => cached)
-      );
+      if (cached) return cached;
+
+      return fetch(event.request)
+        .then((response) => saveResponse(event.request, response).catch(() => {}).then(() => response))
+        .catch(() => undefined);
     })
   );
 });
