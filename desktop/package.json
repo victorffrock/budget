@@ -5,13 +5,16 @@
   "author": "Victor Ferreira Franco",
   "main": "main.js",
   "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --linux AppImage"
   },
   "devDependencies": {
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8"
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3"
   },
   "build": {
     "appId": "br.com.victorferreirafranco.somadordecontas",
@@ -38,6 +41,6 @@
     ]
   },
   "allowScripts": {
-    "electron@33.4.11": true
+    "electron@43.2.0": true
   }
 }
