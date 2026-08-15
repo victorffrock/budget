@@ -15,4 +15,12 @@ test('oferece menu e diálogos acessíveis seguindo a experiência GNOME', () =>
 
 test('mantém uma versão explícita para o diálogo Sobre', () => {
   assert.match(template, /Versão __APP_VERSION__/);
+  assert.match(template, /Victor Ferreira Franco/);
+});
+
+test('oferece OCR local como alternativa para PDFs escaneados', () => {
+  assert.match(template, /__TESSERACT_JS__/);
+  assert.match(template, /__TESSERACT_WORKER_JSON__/);
+  assert.match(template, /Leitura por OCR/);
+  assert.match(template, /Cancelar leitura/);
 });

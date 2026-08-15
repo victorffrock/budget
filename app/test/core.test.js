@@ -1,6 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { extractFromText, parseBRLNumber } = require('../src/core.js');
+const {
+  extractFromOcrText,
+  extractFromText,
+  parseBRLNumber,
+  shouldUseOcr
+} = require('../src/core.js');
 
 test('aceita valores brasileiros bem formatados', () => {
   assert.equal(parseBRLNumber('R$ 1.234,56'), 1234.56);
@@ -25,4 +30,16 @@ test('não escolhe um valor quando rótulos igualmente confiáveis divergem', ()
   const result = extractFromText('Valor a pagar 100,00. Valor a pagar 200,00.');
   assert.equal(result.amount, null);
   assert.equal(result.confidence, 'err');
+});
+
+test('usa OCR apenas quando a leitura textual não identificou um valor', () => {
+  assert.equal(shouldUseOcr({ amount: null }), true);
+  assert.equal(shouldUseOcr({ amount: 42.50 }), false);
+});
+
+test('resultados do OCR sempre pedem conferência', () => {
+  assert.deepEqual(
+    extractFromOcrText('Vencimento 12/09/2026\nValor a pagar R$ 987,65'),
+    { amount: 987.65, confidence: 'warn', due: '12/09/2026' }
+  );
 });
