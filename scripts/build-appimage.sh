@@ -40,6 +40,8 @@ if [ "$1" = "dist/*.AppImage" ]; then
 fi
 
 APPIMAGE="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+chmod +x "$APPIMAGE"
+test -x "$APPIMAGE"
 
 if [ -z "${APPIMAGE_UPDATE_INFORMATION:-}" ]; then
   echo
@@ -91,6 +93,8 @@ test -s "$REPACKED_APPIMAGE"
 test -s "$REPACKED_APPIMAGE.zsync"
 mv -f "$REPACKED_APPIMAGE" "$APPIMAGE"
 mv -f "$REPACKED_APPIMAGE.zsync" "$APPIMAGE.zsync"
+chmod +x "$APPIMAGE"
+test -x "$APPIMAGE"
 
 echo
 echo "Pronto: $APPIMAGE"
