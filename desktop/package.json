@@ -1,8 +1,12 @@
 {
   "name": "somador-de-contas",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Soma o valor de boletos em PDF, tudo processado localmente no seu computador. Visual baseado no GNOME HIG.",
   "author": "Victor Ferreira Franco",
+  "homepage": "https://github.com/victorffrock/somador-de-contas",
+  "repository": "https://github.com/victorffrock/somador-de-contas.git",
+  "license": "GPL-3.0-or-later",
+  "desktopName": "br.com.victorferreirafranco.somadordecontas",
   "main": "main.js",
   "private": true,
   "engines": {
@@ -10,6 +14,7 @@
   },
   "scripts": {
     "start": "electron .",
+    "test": "node --test",
     "dist": "electron-builder --linux AppImage"
   },
   "devDependencies": {
@@ -25,6 +30,7 @@
     "productName": "Somador de Contas",
     "files": [
       "main.js",
+      "menu.js",
       "preload.js",
       "index.html",
       "assets/**/*"
@@ -34,6 +40,7 @@
         "AppImage"
       ],
       "icon": "assets/icon.png",
+      "syncDesktopName": true,
       "category": "Office",
       "synopsis": "Some o valor de boletos em PDF, localmente"
     },
