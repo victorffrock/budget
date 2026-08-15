@@ -72,7 +72,6 @@
     }
   }
 
-  /* Desktop (Electron frameless): preenche a janela, sem “cartão” interno */
   body.is-desktop{
     background:var(--window-bg);
     align-items:stretch;
@@ -87,7 +86,6 @@
     box-shadow:none;
   }
 
-  /* ---------- Header bar ---------- */
   .headerbar{
     height:47px;
     flex:none;
@@ -144,7 +142,6 @@
   .win-btn.close:hover{ background:var(--destructive); color:#fff; }
   .win-btn svg{ width:14px; height:14px; }
 
-  /* ---------- Content ---------- */
   .content{
     flex:1;
     padding:18px 16px 20px;
@@ -163,7 +160,6 @@
     pointer-events:none;
   }
 
-  /* ---------- Status page (empty state, AdwStatusPage-like) ---------- */
   .status-page{
     flex:1;
     display:flex;
@@ -193,7 +189,6 @@
     color:var(--text-dim);
   }
 
-  /* ---------- Buttons ---------- */
   .btn{
     font-family:var(--font);
     font-size:13.5px;
@@ -230,7 +225,6 @@
 
   input[type=file]{ display:none; }
 
-  /* ---------- Boxed list ---------- */
   .boxed-list{
     background:var(--view-bg);
     border:1px solid var(--border);
@@ -330,7 +324,6 @@
   .add-row:hover{ background:var(--light-2); }
   .add-row svg{ width:16px; height:16px; color:var(--accent); }
 
-  /* ---------- Summary card ---------- */
   .summary-card{
     background:var(--view-bg);
     border:1px solid var(--border);
@@ -361,7 +354,6 @@
     margin-right:4px;
   }
 
-  /* ---------- Trust line ---------- */
   .trust{
     display:flex;
     align-items:center;
@@ -453,7 +445,6 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
   var APP_ICON_DATA_URI = "__APP_ICON_DATA_URI__";
   document.getElementById('hbIcon').src = APP_ICON_DATA_URI;
 
-  // Electron frameless: uma única moldura (sem janela dentro de janela)
   if (window.somadorDesktop && window.somadorDesktop.isDesktop) {
     document.body.classList.add('is-desktop');
     var btnMin = document.getElementById('btnMinimize');
@@ -579,10 +570,14 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
 
     return result;
   }
-
-  async function readPdfText(file){
+    async function readPdfText(file){
     var buf = await file.arrayBuffer();
-    var loadingTask = pdfjsLib.getDocument({data: buf});
+    // isEvalSupported: false mitiga a vulnerabilidade de execução de JS
+    // em PDFs maliciosos (CVE-2024-4367), mesmo em versões antigas do pdf.js.
+    var loadingTask = pdfjsLib.getDocument({
+      data: buf,
+      isEvalSupported: false
+    });
     var pdf = await loadingTask.promise;
     var fullText = '';
     var pagesToRead = pdf.numPages;
@@ -697,7 +692,17 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
     var cancelled = false;
     function commit(){
       if(cancelled) return;
-      var val = parseBRLNumber(input.value);
+      var raw = input.value.trim();
+      if(raw === ''){
+        render();
+        return;
+      }
+      var val = parseBRLNumber(raw);
+      if(val === null || val < 0){
+        alert('Valor inválido. Digite um número no formato brasileiro (ex.: 123,45). O valor anterior foi mantido.');
+        render();
+        return;
+      }
       item.amount = val;
       item.confidence = 'ok';
       item.status = 'ok';
