@@ -54,11 +54,14 @@
 
     var candidates = [];
     for (var i = 0; i < rules.length; i++) {
-      var match = norm.match(rules[i].re);
-      if (!match) continue;
+      var flags = rules[i].re.multiline ? 'gim' : 'gi';
+      var matcher = new RegExp(rules[i].re.source, flags);
+      var match;
 
-      var amount = parseBRLNumber(match[1]);
-      if (amount !== null) candidates.push({ amount: amount, score: rules[i].score });
+      while ((match = matcher.exec(norm)) !== null) {
+        var amount = parseBRLNumber(match[1]);
+        if (amount !== null) candidates.push({ amount: amount, score: rules[i].score });
+      }
     }
 
     if (candidates.length) {
