@@ -2,10 +2,14 @@
   "name": "somador-de-contas-app",
   "private": true,
   "description": "Build script para gerar o somador-de-contas.html autocontido (offline).",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "build": "python3 build.py"
+    "build": "python3 build.py",
+    "test": "node --test"
   },
   "devDependencies": {
-    "pdfjs-dist": "3.11.174"
+    "pdfjs-dist": "6.2.108"
   }
 }
