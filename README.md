@@ -47,9 +47,15 @@ Os valores encontrados são editáveis. A edição aceita somente números brasi
 
 Não é perfeito. Boletos muito diferentes do padrão brasileiro podem precisar de ajuste manual.
 
+### PDFs escaneados (OCR)
+
+A partir da versão 4.0, se o PDF não tiver texto selecionável — por exemplo, por ser um documento escaneado — o aplicativo tenta usar OCR local em até quatro páginas. O modelo de português faz parte do próprio aplicativo: ele não baixa nada e não envia o PDF para a internet.
+
+Como toda leitura de imagem pode confundir caracteres, qualquer valor obtido por OCR aparece com o indicador amarelo e deve ser conferido antes do pagamento. Para proteger a memória do computador, o OCR é oferecido para arquivos de até 25 MB; documentos maiores ainda podem ter o valor informado manualmente.
+
 ## Privacidade
 
-Nada é enviado para a internet. A leitura do PDF e a soma acontecem só no seu computador.
+Nada é enviado para a internet. A leitura do PDF, o OCR e a soma acontecem só no seu computador.
 
 ## Compilando do código-fonte
 
@@ -85,4 +91,4 @@ APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|somador-de-contas|la
 
 ## Licença
 
-GNU GPLv3. Usa pdf.js (Apache 2.0) e, no AppImage, Electron (MIT).
+GNU GPLv3. Usa pdf.js e Tesseract.js (Apache 2.0) e, no AppImage, Electron (MIT).

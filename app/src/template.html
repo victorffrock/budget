@@ -492,6 +492,7 @@
   .about-name{ margin:0; font-size:19px; font-weight:750; }
   .about-version{ margin:3px 0 16px; font-size:13px; color:var(--text-dim); }
   .about-description{ max-width:31ch; margin:0 auto 18px !important; }
+  .about-author{ margin:0 auto 12px !important; font-size:13px; color:var(--text-dim); }
   .about-links{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
   .about-links a{ color:var(--accent-hover); font-size:13px; font-weight:600; }
   .toast{
@@ -597,6 +598,8 @@
       <p>Escolha arquivos PDF ou arraste-os para a janela. A leitura acontece apenas neste computador.</p>
       <h3>Conferir valores</h3>
       <p>O ícone verde indica um valor encontrado com alta confiança. O amarelo pede conferência; o cinza indica que o valor não foi identificado. Clique em um valor para corrigi-lo manualmente.</p>
+      <h3>Leitura por OCR</h3>
+      <p>Quando um PDF é apenas uma imagem escaneada, o aplicativo tenta ler as primeiras páginas com OCR local. Resultados desse tipo aparecem em amarelo e devem ser conferidos. A leitura pode ser cancelada pelo botão ao lado do documento.</p>
       <h3>Atualizações</h3>
       <p>No Linux, integre o AppImage ao Gear Lever. A partir da versão 3.1.0, ele localiza as próximas versões automaticamente.</p>
       <h3>Atalhos</h3>
@@ -622,6 +625,7 @@
       <p class="about-name">Somador de Contas</p>
       <p class="about-version">Versão __APP_VERSION__</p>
       <p class="about-description">Uma ferramenta simples para somar valores de boletos e faturas em PDF, sem enviar seus documentos para a internet.</p>
+      <p class="about-author">Desenvolvido por Victor Ferreira Franco</p>
       <div class="about-links">
         <a href="https://github.com/victorffrock/somador-de-contas" target="_blank" rel="noopener noreferrer">Código-fonte</a>
         <a href="https://github.com/victorffrock/somador-de-contas/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licença GPLv3</a>
@@ -637,9 +641,14 @@
 __CORE_JS__
 </script>
 <script>
+/* ========================= tesseract.js (embedded, offline) ========================= */
+__TESSERACT_JS__
+</script>
+<script>
 /* ======================= pdf.js modules (embedded, offline) ======================= */
 window.__PDFJS_LIB_SRC__ = __PDFJS_LIB_JSON__;
 window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
+window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
 </script>
 <script type="module">
 (async function(){
@@ -666,6 +675,15 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
 
   var state = { items: [] };
   var nextId = 1;
+  var MAX_OCR_PAGES = 4;
+  var MAX_OCR_FILE_BYTES = 25 * 1024 * 1024;
+  var MAX_OCR_RENDER_SIDE = 2200;
+  var OCR_LANGUAGE_PATH = 'https://somador.local/tessdata';
+  var ocrWorker = null;
+  var ocrWorkerPromise = null;
+  var ocrWorkerURL = null;
+  var ocrCurrentItem = null;
+  var ocrQueue = Promise.resolve();
 
   var contentEl = document.getElementById('content');
   var statusPage = document.getElementById('statusPage');
@@ -740,9 +758,19 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
 
   var parseBRLNumber = window.SomadorCore.parseBRLNumber;
   var normalizeText = window.SomadorCore.normalizeText;
+  var extractFromOcrText = window.SomadorCore.extractFromOcrText;
   var extractFromText = window.SomadorCore.extractFromText;
+  var shouldUseOcr = window.SomadorCore.shouldUseOcr;
 
-  async function readPdfText(file){
+  function isReading(item){
+    return item.status === 'processing' || item.status === 'ocr';
+  }
+
+  function isItemActive(item){
+    return !item.cancelled && state.items.indexOf(item) !== -1;
+  }
+
+  async function loadPdf(file){
     var buf = await file.arrayBuffer();
     // isEvalSupported: false mitiga a vulnerabilidade de execução de JS
     // em PDFs maliciosos (CVE-2024-4367), mesmo em versões antigas do pdf.js.
@@ -750,7 +778,10 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
       data: buf,
       isEvalSupported: false
     });
-    var pdf = await loadingTask.promise;
+    return loadingTask.promise;
+  }
+
+  async function readPdfText(pdf){
     var fullText = '';
     var pagesToRead = pdf.numPages;
     for(var p=1; p<=pagesToRead; p++){
@@ -773,6 +804,121 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
     return fullText;
   }
 
+  function getOcrUrls(){
+    if(!ocrWorkerURL){
+      ocrWorkerURL = URL.createObjectURL(new Blob(
+        [window.__TESSERACT_WORKER_SRC__], {type:'application/javascript'}
+      ));
+    }
+  }
+
+  function updateOcrProgress(message){
+    var item = ocrCurrentItem;
+    if(!item || !isItemActive(item) || item.status !== 'ocr' || typeof message.progress !== 'number') return;
+    var progress = Math.round(message.progress * 100);
+    if(progress === item.ocrProgress) return;
+    item.ocrProgress = progress;
+    render();
+  }
+
+  function getOcrWorker(){
+    if(ocrWorker) return Promise.resolve(ocrWorker);
+    if(ocrWorkerPromise) return ocrWorkerPromise;
+    if(!window.Tesseract || typeof window.Tesseract.createWorker !== 'function') {
+      return Promise.reject(new Error('OCR indisponível neste navegador.'));
+    }
+
+    getOcrUrls();
+    ocrWorkerPromise = window.Tesseract.createWorker(
+      'por',
+      window.Tesseract.OEM.LSTM_ONLY,
+      {
+        workerPath: ocrWorkerURL,
+        langPath: OCR_LANGUAGE_PATH,
+        cacheMethod: 'none',
+        workerBlobURL: false,
+        logger: updateOcrProgress
+      }
+    ).then(function(worker){
+      ocrWorker = worker;
+      return worker;
+    }).catch(function(error){
+      ocrWorkerPromise = null;
+      throw error;
+    });
+    return ocrWorkerPromise;
+  }
+
+  function disposeOcrWorker(){
+    var worker = ocrWorker;
+    ocrWorker = null;
+    ocrWorkerPromise = null;
+    if(!worker) return Promise.resolve();
+    return worker.terminate().catch(function(){});
+  }
+
+  function queueOcr(task){
+    var result = ocrQueue.then(task, task);
+    ocrQueue = result.catch(function(){});
+    return result;
+  }
+
+  async function renderPageForOcr(page){
+    var baseViewport = page.getViewport({scale: 1});
+    var scale = Math.min(2, MAX_OCR_RENDER_SIDE / Math.max(baseViewport.width, baseViewport.height));
+    scale = Math.max(0.8, scale);
+    var viewport = page.getViewport({scale: scale});
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    var context = canvas.getContext('2d', {willReadFrequently: true});
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({canvasContext: context, viewport: viewport}).promise;
+    return canvas;
+  }
+
+  async function readPdfWithOcr(pdf, item){
+    return queueOcr(async function(){
+      if(!isItemActive(item)) throw new Error('Leitura cancelada.');
+      item.status = 'ocr';
+      item.ocrProgress = 0;
+      item.ocrPages = Math.min(pdf.numPages, MAX_OCR_PAGES);
+      render();
+
+      var worker = await getOcrWorker();
+      var fullText = '';
+      for(var pageNumber = 1; pageNumber <= item.ocrPages; pageNumber++){
+        if(!isItemActive(item)) throw new Error('Leitura cancelada.');
+        item.ocrPage = pageNumber;
+        item.ocrProgress = 0;
+        render();
+
+        var page = await pdf.getPage(pageNumber);
+        var canvas = await renderPageForOcr(page);
+        if(!isItemActive(item)) {
+          canvas.width = 0;
+          canvas.height = 0;
+          page.cleanup();
+          throw new Error('Leitura cancelada.');
+        }
+        ocrCurrentItem = item;
+        try{
+          var result = await worker.recognize(canvas);
+          fullText += result.data.text + '\n';
+        } finally {
+          ocrCurrentItem = null;
+          canvas.width = 0;
+          canvas.height = 0;
+          page.cleanup();
+        }
+
+        if(extractFromOcrText(fullText).amount !== null) break;
+      }
+      return fullText;
+    });
+  }
+
   function render(){
     rowsEl.innerHTML = '';
     var n = state.items.length;
@@ -787,14 +933,14 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
       row.className = 'list-row';
 
       var statusEl = document.createElement('div');
-      if(item.status === 'processing'){
+      if(isReading(item)){
         statusEl.className = 'row-status spin';
         statusEl.innerHTML = ICONS.spinner;
       } else {
         statusEl.className = 'row-status ' + item.confidence;
         statusEl.innerHTML = ICONS[item.confidence] || ICONS.err;
         statusEl.title = item.confidence === 'ok' ? 'Valor identificado com segurança'
-          : item.confidence === 'warn' ? 'Valor identificado por heurística — confira'
+          : item.confidence === 'warn' ? (item.ocrUsed ? 'Valor identificado por OCR — confira' : 'Valor identificado por heurística — confira')
           : 'Não identificado — confira o valor';
       }
       row.appendChild(statusEl);
@@ -809,16 +955,30 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
 
       var sub = document.createElement('div');
       sub.className = 'fsub';
-      sub.textContent = item.status === 'processing' ? 'lendo…' : (item.due ? 'vence ' + item.due : '');
+      if(item.status === 'processing') {
+        sub.textContent = 'lendo texto…';
+      } else if(item.status === 'ocr') {
+        sub.textContent = 'lendo imagem' + (item.ocrPages > 1 ? ' ' + item.ocrPage + '/' + item.ocrPages : '') + (item.ocrProgress ? ' — ' + item.ocrProgress + '%' : '') + '…';
+      } else if(item.ocrSkipped) {
+        sub.textContent = 'OCR disponível para PDFs de até 25 MB — informe manualmente';
+      } else if(item.ocrError) {
+        sub.textContent = 'OCR não pôde concluir — informe manualmente';
+      } else if(item.ocrTried && !item.amount) {
+        sub.textContent = 'OCR não encontrou um valor — informe manualmente';
+      } else if(item.ocrUsed) {
+        sub.textContent = (item.due ? 'vence ' + item.due + ' — ' : '') + 'lido por OCR — confira';
+      } else {
+        sub.textContent = item.due ? 'vence ' + item.due : '';
+      }
       if(sub.textContent) titleEl.appendChild(sub);
       row.appendChild(titleEl);
 
       var valueEl = document.createElement('div');
       valueEl.className = 'row-value';
-      if(item.status === 'processing'){
+      if(isReading(item)){
         valueEl.textContent = '…';
       } else {
-        valueEl.textContent = fmtBRL(item.amount || 0);
+        valueEl.textContent = item.amount === null ? '—' : fmtBRL(item.amount);
         valueEl.tabIndex = 0;
         valueEl.setAttribute('role','button');
         valueEl.setAttribute('aria-label', 'Editar valor de ' + item.filename);
@@ -831,7 +991,9 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
 
       var rm = document.createElement('button');
       rm.className = 'row-remove';
-      rm.setAttribute('aria-label', 'Remover ' + item.filename);
+      var cancelReading = isReading(item);
+      rm.setAttribute('aria-label', (cancelReading ? 'Cancelar leitura de ' : 'Remover ') + item.filename);
+      rm.title = cancelReading ? 'Cancelar leitura' : 'Remover';
       rm.innerHTML = ICONS.remove;
       rm.addEventListener('click', function(){ removeItem(item.id); });
       row.appendChild(rm);
@@ -889,12 +1051,18 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
   }
 
   function removeItem(id){
-    state.items = state.items.filter(function(it){ return it.id !== id; });
+    var item = state.items.find(function(it){ return it.id === id; });
+    if(!item) return;
+    item.cancelled = true;
+    if(ocrCurrentItem === item) disposeOcrWorker();
+    state.items = state.items.filter(function(it){ return it !== item; });
     render();
   }
 
   function clearItems(){
     if(!state.items.length) return;
+    state.items.forEach(function(item){ item.cancelled = true; });
+    if(ocrCurrentItem) disposeOcrWorker();
     state.items = [];
     render();
     chooseBtn.focus();
@@ -907,7 +1075,11 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
     if(!files.length) return;
 
     var pending = files.map(function(f){
-      return { id: nextId++, filename: f.name, amount:null, due:null, status:'processing', confidence:'err' };
+      return {
+        id: nextId++, filename: f.name, amount:null, due:null, status:'processing', confidence:'err',
+        cancelled:false, ocrUsed:false, ocrTried:false, ocrSkipped:false, ocrError:false,
+        ocrPage:0, ocrPages:0, ocrProgress:0
+      };
     });
     state.items = state.items.concat(pending);
     render();
@@ -915,19 +1087,41 @@ window.__PDF_WORKER_SRC__ = __PDFJS_WORKER_JSON__;
     for(var i=0;i<files.length;i++){
       var file = files[i];
       var item = pending[i];
+      var pdf = null;
       try{
-        var text = await readPdfText(file);
+        pdf = await loadPdf(file);
+        var text = await readPdfText(pdf);
         var extracted = extractFromText(text);
+        if(shouldUseOcr(extracted)){
+          if(file.size > MAX_OCR_FILE_BYTES) {
+            item.ocrSkipped = true;
+          } else {
+            var ocrText = await readPdfWithOcr(pdf, item);
+            var ocrExtracted = extractFromOcrText(ocrText);
+            item.ocrTried = true;
+            if(ocrExtracted.amount !== null) {
+              extracted = ocrExtracted;
+              item.ocrUsed = true;
+            } else if(!extracted.due) {
+              extracted.due = ocrExtracted.due;
+            }
+          }
+        }
+        if(!isItemActive(item)) continue;
         item.amount = extracted.amount;
         item.confidence = extracted.confidence;
         item.due = extracted.due;
         item.status = 'ok';
       } catch(err){
+        if(!isItemActive(item)) continue;
         item.amount = null;
         item.confidence = 'err';
+        item.ocrError = item.status === 'ocr';
         item.status = 'ok';
+      } finally {
+        if(pdf) pdf.cleanup();
+        render();
       }
-      render();
     }
   }
 
