@@ -23,9 +23,10 @@ test('mantém o foco acessível no menu e nos diálogos', () => {
 
 test('mantém a barra de título visível enquanto o conteúdo do app rola', () => {
   assert.match(template, /\.headerbar\{[\s\S]*?position:sticky;[\s\S]*?top:0;[\s\S]*?z-index:30;/);
-  assert.match(template, /body\.is-desktop\{[\s\S]*?overflow:hidden;/);
-  assert.match(template, /\.app-window\{[\s\S]*?height:100vh;[\s\S]*?overflow:hidden;/);
-  assert.match(template, /\.content\{[\s\S]*?min-height:0;[\s\S]*?overflow-y:auto;/);
+  assert.match(template, /\[hidden\]\{ display:none !important; \}/);
+  assert.match(template, /body\.is-desktop\{[\s\S]*?overflow-y:auto;/);
+  assert.match(template, /body\.is-desktop \.app-window\{[\s\S]*?overflow:visible;/);
+  assert.match(template, /\.content\{[\s\S]*?overflow:visible;/);
 });
 
 test('mantém uma versão explícita para o diálogo Sobre', () => {
