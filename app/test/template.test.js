@@ -46,3 +46,12 @@ test('permite somar valores avulsos com uma descrição opcional', () => {
   assert.match(template, /Valor avulso adicionado ao total/);
   assert.match(template, /action === 'add-manual'/);
 });
+
+test('calcula e comunica o saldo depois de pagar as contas', () => {
+  assert.match(template, /id="balanceCard"/);
+  assert.match(template, /id="availableAmountInput"/);
+  assert.match(template, /function renderBalance/);
+  assert.match(template, /Sobra após pagar as contas/);
+  assert.match(template, /O saldo ficará zerado/);
+  assert.match(template, /Faltará após pagar as contas/);
+});

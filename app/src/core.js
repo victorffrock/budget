@@ -22,6 +22,13 @@
     return Number.isFinite(amount) && amount >= 0 ? amount : null;
   }
 
+  function calculateRemainingBalance(availableAmount, billsTotal) {
+    if (!Number.isFinite(availableAmount) || !Number.isFinite(billsTotal)) return null;
+    if (availableAmount < 0 || billsTotal < 0) return null;
+
+    return Math.round((availableAmount - billsTotal) * 100) / 100;
+  }
+
   function normalizeText(text) {
     return String(text || '')
       .replace(/\u00a0/g, ' ')
@@ -120,6 +127,7 @@
   }
 
   return Object.freeze({
+    calculateRemainingBalance: calculateRemainingBalance,
     extractFromOcrText: extractFromOcrText,
     extractFromText: extractFromText,
     normalizeText: normalizeText,

@@ -49,6 +49,10 @@ Os valores encontrados são editáveis. A edição aceita somente números brasi
 
 Use **Adicionar valor avulso** para incluir uma despesa que não está em um PDF, como estacionamento ou uma taxa. A descrição é opcional, o valor usa o mesmo formato brasileiro e entra imediatamente no total. Valores avulsos também podem ser editados ou removidos a qualquer momento.
 
+### Dinheiro disponível
+
+Depois de adicionar contas, informe quanto dinheiro você tem disponível no cartão abaixo do total. O aplicativo calcula na hora o saldo após pagar tudo: mostra o que sobra, avisa quando o saldo fica zerado ou informa quanto faltará. O campo usa o mesmo formato brasileiro dos demais valores, como `123,45` ou `1.234,56`.
+
 Não é perfeito. Boletos muito diferentes do padrão brasileiro podem precisar de ajuste manual.
 
 ### PDFs escaneados (OCR)

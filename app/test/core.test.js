@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {
+  calculateRemainingBalance,
   extractFromOcrText,
   extractFromText,
   parseBRLNumber,
@@ -23,6 +24,13 @@ test('rejeita entrada manual ambígua ou inválida', () => {
   for (const value of ['', 'abc123', '-10', '1,2,3', '1.234,56x', '12.34']) {
     assert.equal(parseBRLNumber(value), null, value);
   }
+});
+
+test('calcula o saldo restante com valores positivo, zero e negativo', () => {
+  assert.equal(calculateRemainingBalance(2000, 1624.65), 375.35);
+  assert.equal(calculateRemainingBalance(1624.65, 1624.65), 0);
+  assert.equal(calculateRemainingBalance(1000, 1624.65), -624.65);
+  assert.equal(calculateRemainingBalance(-1, 10), null);
 });
 
 test('extrai um valor com rótulo de alta confiança', () => {
