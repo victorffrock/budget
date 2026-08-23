@@ -623,10 +623,6 @@
       <div class="summary-label" id="countLabel">0 contas</div>
       <div class="summary-value"><span class="currency-symbol">R$</span><span id="totalValue">0,00</span></div>
       <div class="summary-actions">
-        <button class="btn flat" id="addManualBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Adicionar valor avulso…
-        </button>
         <button class="btn flat destructive-text" id="clearBtn">Limpar</button>
       </div>
     </div>
@@ -711,7 +707,7 @@
     <div class="dialog-body about-content">
       <img class="about-icon" id="aboutIcon" alt="Ícone do Somador de Contas" src="">
       <p class="about-name">Somador de Contas</p>
-      <p class="about-version">Versão 4.0.0</p>
+      <p class="about-version">Versão 4.1.0</p>
       <p class="about-description">Uma ferramenta simples para somar valores de boletos e faturas em PDF, sem enviar seus documentos para a internet.</p>
       <p class="about-author">Desenvolvido por Victor Ferreira Franco</p>
       <div class="about-links">
@@ -915,7 +911,6 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   var summaryCard = document.getElementById('summaryCard');
   var countLabel = document.getElementById('countLabel');
   var totalValueEl = document.getElementById('totalValue');
-  var addManualBtn = document.getElementById('addManualBtn');
   var clearBtn = document.getElementById('clearBtn');
   var menuWrap = document.getElementById('menuWrap');
   var appMenuButton = document.getElementById('appMenuButton');
@@ -1413,7 +1408,6 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
 
   chooseBtn.addEventListener('click', openFileChooser);
   addManualEmptyBtn.addEventListener('click', openManualValueDialog);
-  addManualBtn.addEventListener('click', openManualValueDialog);
   addRow.addEventListener('click', openFileChooser);
   addRow.addEventListener('keydown', function(e){
     if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openFileChooser(); }

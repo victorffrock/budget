@@ -29,6 +29,8 @@ test('oferece OCR local como alternativa para PDFs escaneados', () => {
 
 test('permite somar valores avulsos com uma descrição opcional', () => {
   assert.match(template, /id="manualValueDialog"/);
+  assert.match(template, /id="addManualEmptyBtn"/);
+  assert.doesNotMatch(template, /id="addManualBtn"/);
   assert.match(template, /Adicionar valor avulso/);
   assert.match(template, /id="manualValueDescription"/);
   assert.match(template, /id="manualValueInput"/);
