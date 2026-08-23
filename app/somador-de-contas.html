@@ -383,6 +383,18 @@
   }
   .add-row:hover{ background:var(--light-2); }
   .add-row svg{ width:16px; height:16px; color:var(--accent); }
+  .manual-action-host{ padding:0; }
+  .manual-action-host .btn{
+    width:100%;
+    min-height:44px;
+    justify-content:flex-start;
+    padding:10px 12px;
+    border:none;
+    border-radius:0;
+    color:var(--accent);
+    font-weight:600;
+  }
+  .manual-action-host .btn:hover{ background:var(--light-2); }
 
   .status-actions{
     display:flex;
@@ -682,12 +694,12 @@
       </svg>
       <h2 class="status-title">Nenhuma conta ainda</h2>
       <p class="status-desc">Arraste arquivos PDF para esta janela, ou escolha os arquivos manualmente.</p>
-      <div class="status-actions">
+      <div class="status-actions" id="statusActions">
         <button class="btn suggested pill" id="chooseBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Escolher arquivos…
         </button>
-        <button class="btn" id="addManualEmptyBtn">
+        <button class="btn" id="addManualBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Adicionar valor avulso…
         </button>
@@ -700,6 +712,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span>Adicionar boletos…</span>
       </div>
+      <div class="list-row manual-action-host" id="manualActionHost" hidden></div>
     </div>
 
     <div class="summary-card" id="summaryCard" hidden>
@@ -1009,11 +1022,13 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
 
   var contentEl = document.getElementById('content');
   var statusPage = document.getElementById('statusPage');
+  var statusActions = document.getElementById('statusActions');
   var boxedList = document.getElementById('boxedList');
   var rowsEl = document.getElementById('rows');
   var addRow = document.getElementById('addRow');
+  var manualActionHost = document.getElementById('manualActionHost');
   var chooseBtn = document.getElementById('chooseBtn');
-  var addManualEmptyBtn = document.getElementById('addManualEmptyBtn');
+  var addManualBtn = document.getElementById('addManualBtn');
   var fileInput = document.getElementById('fileInput');
   var summaryCard = document.getElementById('summaryCard');
   var countLabel = document.getElementById('countLabel');
@@ -1327,14 +1342,30 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     });
   }
 
+  // O mesmo botão de valor avulso muda de lugar conforme o estado da tela.
+  // Isso mantém a ação sempre disponível sem criar controles duplicados.
+  function syncManualActionPosition(hasItems){
+    var target = hasItems ? manualActionHost : statusActions;
+    if(addManualBtn.parentElement !== target) target.appendChild(addManualBtn);
+    manualActionHost.hidden = !hasItems;
+  }
+
+  // Centraliza as regras de visibilidade para evitar que estados diferentes
+  // da interface (lista, resumo e ações) fiquem fora de sincronia.
+  function renderLayout(itemCount){
+    var hasItems = itemCount > 0;
+    statusPage.hidden = hasItems;
+    boxedList.hidden = !hasItems;
+    summaryCard.hidden = !hasItems;
+    menuClear.disabled = !hasItems;
+    syncManualActionPosition(hasItems);
+  }
+
   function render(){
     rowsEl.innerHTML = '';
     var n = state.items.length;
 
-    statusPage.hidden = n > 0;
-    boxedList.hidden = n === 0;
-    summaryCard.hidden = n === 0;
-    menuClear.disabled = n === 0;
+    renderLayout(n);
 
     state.items.forEach(function(item){
       var row = document.createElement('div');
@@ -1591,7 +1622,7 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   }
 
   chooseBtn.addEventListener('click', openFileChooser);
-  addManualEmptyBtn.addEventListener('click', openManualValueDialog);
+  addManualBtn.addEventListener('click', openManualValueDialog);
   addRow.addEventListener('click', openFileChooser);
   addRow.addEventListener('keydown', function(e){
     if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openFileChooser(); }

@@ -45,14 +45,17 @@ test('oferece OCR local como alternativa para PDFs escaneados', () => {
 
 test('permite somar valores avulsos com uma descrição opcional', () => {
   assert.match(template, /id="manualValueDialog"/);
-  assert.match(template, /id="addManualEmptyBtn"/);
-  assert.doesNotMatch(template, /id="addManualBtn"/);
+  assert.match(template, /id="statusActions"/);
+  assert.match(template, /id="addManualBtn"/);
+  assert.match(template, /id="manualActionHost" hidden/);
   assert.match(template, /Adicionar valor avulso/);
   assert.match(template, /id="manualValueDescription"/);
   assert.match(template, /id="manualValueInput"/);
   assert.match(template, /kind: 'manual'/);
   assert.match(template, /Valor avulso adicionado ao total/);
   assert.match(template, /action === 'add-manual'/);
+  assert.match(template, /function syncManualActionPosition/);
+  assert.match(template, /target\.appendChild\(addManualBtn\)/);
 });
 
 test('calcula e comunica o saldo depois de pagar as contas', () => {
