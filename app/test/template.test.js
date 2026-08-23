@@ -48,9 +48,12 @@ test('permite somar valores avulsos com uma descrição opcional', () => {
 });
 
 test('calcula e comunica o saldo depois de pagar as contas', () => {
-  assert.match(template, /id="balanceCard"/);
+  assert.match(template, /id="balanceCard" aria-label="Dinheiro disponível e saldo final">/);
+  assert.doesNotMatch(template, /id="balanceCard"[^>]*\bhidden\b/);
   assert.match(template, /id="availableAmountInput"/);
   assert.match(template, /function renderBalance/);
+  assert.doesNotMatch(template, /balanceCard\.hidden/);
+  assert.match(template, /Adicione contas para calcular o saldo final/);
   assert.match(template, /Sobra após pagar as contas/);
   assert.match(template, /O saldo ficará zerado/);
   assert.match(template, /Faltará após pagar as contas/);

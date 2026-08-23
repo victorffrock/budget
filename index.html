@@ -711,7 +711,7 @@
       </div>
     </div>
 
-    <section class="balance-card" id="balanceCard" aria-label="Dinheiro disponível e saldo final" hidden>
+    <section class="balance-card" id="balanceCard" aria-label="Dinheiro disponível e saldo final">
       <div class="balance-input-row">
         <label for="availableAmountInput">Dinheiro disponível</label>
         <div class="balance-input-wrap">
@@ -1142,13 +1142,19 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   }
 
   function renderBalance(total, preserveInput){
-    balanceCard.hidden = state.items.length === 0;
     if(!preserveInput) availableAmountInput.value = state.availableAmount === null ? '' : fmtBRL(state.availableAmount);
     balanceResult.className = 'balance-result';
 
     if(state.availableAmount === null){
       balanceResult.classList.add('empty');
       balanceResultLabel.textContent = 'Informe o dinheiro disponível';
+      balanceResultValue.textContent = '—';
+      return;
+    }
+
+    if(state.items.length === 0){
+      balanceResult.classList.add('empty');
+      balanceResultLabel.textContent = 'Adicione contas para calcular o saldo final';
       balanceResultValue.textContent = '—';
       return;
     }
