@@ -17,6 +17,7 @@ function createApplicationMenuTemplate(options) {
       label: 'Arquivo',
       submenu: [
         action('Adicionar boletos…', 'CommandOrControl+O', 'open-files'),
+        action('Adicionar valor avulso…', undefined, 'add-manual'),
         { type: 'separator' },
         { label: 'Sair', role: 'quit', click: onQuit }
       ]

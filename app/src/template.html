@@ -305,6 +305,7 @@
   .row-status.ok svg{ color:var(--green-5); }
   .row-status.warn svg{ color:var(--yellow-5); }
   .row-status.err svg{ color:var(--destructive); }
+  .row-status.manual svg{ color:var(--accent); }
   .row-status.spin svg{ color:var(--light-5); animation:spin 1s linear infinite; }
   @media (prefers-reduced-motion: reduce){ .row-status.spin svg{ animation:none; } }
   @keyframes spin{ to{ transform:rotate(360deg); } }
@@ -378,6 +379,13 @@
   .add-row:hover{ background:var(--light-2); }
   .add-row svg{ width:16px; height:16px; color:var(--accent); }
 
+  .status-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+  }
+
   .summary-card{
     background:var(--view-bg);
     border:1px solid var(--border);
@@ -407,6 +415,13 @@
     color:var(--text-dim);
     margin-right:4px;
   }
+  .summary-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:2px;
+  }
+  .summary-actions .btn{ white-space:nowrap; }
 
   .trust{
     display:flex;
@@ -461,6 +476,32 @@
   .dialog-body p,.dialog-body li{ font-size:13px; }
   .dialog-body p{ margin:6px 0; color:var(--text-dim); }
   .dialog-body ul{ margin:6px 0; padding-left:20px; }
+  .form-field{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    margin-bottom:14px;
+  }
+  .form-field label{ font-size:13px; font-weight:600; }
+  .form-field input{
+    width:100%;
+    min-height:36px;
+    padding:7px 9px;
+    border:1px solid var(--light-4);
+    border-radius:var(--radius-row);
+    background:var(--view-bg);
+    color:var(--text);
+    font:inherit;
+  }
+  .form-field input:focus{ border-color:var(--accent); outline:2px solid var(--blue-1); }
+  .field-hint{ color:var(--text-dim); font-size:11.5px; }
+  .form-error{ min-height:18px; margin:0; color:var(--destructive) !important; }
+  .dialog-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:20px;
+  }
   .shortcut-list{
     margin:8px 0 0;
     border:1px solid var(--border);
@@ -510,6 +551,11 @@
     font-size:13px;
     text-align:center;
   }
+  @media (max-width:400px){
+    .summary-card{ align-items:flex-start; }
+    .summary-value{ flex-basis:100%; text-align:left; padding-right:0; }
+    .summary-actions{ width:100%; justify-content:space-between; }
+  }
 </style>
 </head>
 <body>
@@ -528,6 +574,7 @@
         </button>
         <div class="app-menu" id="appMenu" role="menu" aria-label="Menu do aplicativo" hidden>
           <button type="button" class="menu-item" id="menuOpenFiles" role="menuitem">Adicionar boletos… <span class="menu-shortcut">Ctrl+O</span></button>
+          <button type="button" class="menu-item" id="menuAddManualValue" role="menuitem">Adicionar valor avulso…</button>
           <button type="button" class="menu-item" id="menuClear" role="menuitem" disabled>Limpar contas</button>
           <div class="menu-separator" role="separator"></div>
           <button type="button" class="menu-item" id="menuManual" role="menuitem">Manual <span class="menu-shortcut">F1</span></button>
@@ -552,10 +599,16 @@
       </svg>
       <h2 class="status-title">Nenhuma conta ainda</h2>
       <p class="status-desc">Arraste arquivos PDF para esta janela, ou escolha os arquivos manualmente.</p>
-      <button class="btn suggested pill" id="chooseBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Escolher arquivos…
-      </button>
+      <div class="status-actions">
+        <button class="btn suggested pill" id="chooseBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Escolher arquivos…
+        </button>
+        <button class="btn" id="addManualEmptyBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Adicionar valor avulso…
+        </button>
+      </div>
     </div>
 
     <div class="boxed-list" id="boxedList" hidden>
@@ -569,7 +622,13 @@
     <div class="summary-card" id="summaryCard" hidden>
       <div class="summary-label" id="countLabel">0 contas</div>
       <div class="summary-value"><span class="currency-symbol">R$</span><span id="totalValue">0,00</span></div>
-      <button class="btn flat destructive-text" id="clearBtn">Limpar</button>
+      <div class="summary-actions">
+        <button class="btn flat" id="addManualBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Adicionar valor avulso…
+        </button>
+        <button class="btn flat destructive-text" id="clearBtn">Limpar</button>
+      </div>
     </div>
 
     <p class="trust">
@@ -585,6 +644,33 @@
 
 </div>
 
+<div class="dialog-backdrop" id="manualValueDialog" hidden>
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="manualValueTitle">
+    <header class="dialog-header">
+      <h2 class="dialog-title" id="manualValueTitle">Adicionar valor avulso</h2>
+      <button type="button" class="dialog-close" data-dialog-close="manualValueDialog" aria-label="Fechar adição de valor avulso" title="Fechar">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </header>
+    <form class="dialog-body" id="manualValueForm" novalidate>
+      <div class="form-field">
+        <label for="manualValueDescription">Descrição <span class="field-hint">(opcional)</span></label>
+        <input id="manualValueDescription" type="text" maxlength="80" placeholder="Ex.: Estacionamento" autocomplete="off" data-dialog-initial-focus>
+      </div>
+      <div class="form-field">
+        <label for="manualValueInput">Valor</label>
+        <input id="manualValueInput" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" aria-describedby="manualValueHint manualValueError">
+        <span class="field-hint" id="manualValueHint">Use o formato brasileiro, como 123,45 ou 1.234,56.</span>
+      </div>
+      <p class="form-error" id="manualValueError" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn" data-dialog-close="manualValueDialog">Cancelar</button>
+        <button type="submit" class="btn suggested">Adicionar</button>
+      </div>
+    </form>
+  </section>
+</div>
+
 <div class="dialog-backdrop" id="manualDialog" hidden>
   <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="manualTitle">
     <header class="dialog-header">
@@ -598,6 +684,8 @@
       <p>Escolha arquivos PDF ou arraste-os para a janela. A leitura acontece apenas neste computador.</p>
       <h3>Conferir valores</h3>
       <p>O ícone verde indica um valor encontrado com alta confiança. O amarelo pede conferência; o cinza indica que o valor não foi identificado. Clique em um valor para corrigi-lo manualmente.</p>
+      <h3>Valores avulsos</h3>
+      <p>Use “Adicionar valor avulso” para incluir uma despesa que não está em um PDF. Ela entra no total e pode ser editada ou removida depois.</p>
       <h3>Leitura por OCR</h3>
       <p>Quando um PDF é apenas uma imagem escaneada, o aplicativo tenta ler as primeiras páginas com OCR local. Resultados desse tipo aparecem em amarelo e devem ser conferidos. A leitura pode ser cancelada pelo botão ao lado do documento.</p>
       <h3>Atualizações</h3>
@@ -691,18 +779,26 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
   var rowsEl = document.getElementById('rows');
   var addRow = document.getElementById('addRow');
   var chooseBtn = document.getElementById('chooseBtn');
+  var addManualEmptyBtn = document.getElementById('addManualEmptyBtn');
   var fileInput = document.getElementById('fileInput');
   var summaryCard = document.getElementById('summaryCard');
   var countLabel = document.getElementById('countLabel');
   var totalValueEl = document.getElementById('totalValue');
+  var addManualBtn = document.getElementById('addManualBtn');
   var clearBtn = document.getElementById('clearBtn');
   var menuWrap = document.getElementById('menuWrap');
   var appMenuButton = document.getElementById('appMenuButton');
   var appMenu = document.getElementById('appMenu');
   var menuOpenFiles = document.getElementById('menuOpenFiles');
+  var menuAddManualValue = document.getElementById('menuAddManualValue');
   var menuClear = document.getElementById('menuClear');
   var menuManual = document.getElementById('menuManual');
   var menuAbout = document.getElementById('menuAbout');
+  var manualValueDialog = document.getElementById('manualValueDialog');
+  var manualValueForm = document.getElementById('manualValueForm');
+  var manualValueDescription = document.getElementById('manualValueDescription');
+  var manualValueInput = document.getElementById('manualValueInput');
+  var manualValueError = document.getElementById('manualValueError');
   var manualDialog = document.getElementById('manualDialog');
   var aboutDialog = document.getElementById('aboutDialog');
   var toast = document.getElementById('toast');
@@ -732,8 +828,8 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
     activeDialog = dialog;
     dialog.hidden = false;
     document.body.classList.add('modal-open');
-    var closeButton = dialog.querySelector('[data-dialog-close]');
-    if(closeButton) closeButton.focus();
+    var initialFocus = dialog.querySelector('[data-dialog-initial-focus]') || dialog.querySelector('[data-dialog-close]');
+    if(initialFocus) initialFocus.focus();
   }
 
   function closeDialog(dialog){
@@ -741,6 +837,7 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
     dialog.hidden = true;
     activeDialog = null;
     document.body.classList.remove('modal-open');
+    if(dialog === manualValueDialog) resetManualValueForm();
     if(lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
   }
 
@@ -748,6 +845,7 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
     ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L16 10"/></svg>',
     warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg>',
     err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.5 2.5 0 014.9.6c0 1.6-2.2 1.9-2.4 3.4"/><circle cx="12" cy="16.8" r="0.6" fill="currentColor" stroke="none"/></svg>',
+    manual: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
     remove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 100 18"/></svg>'
   };
@@ -933,7 +1031,11 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
       row.className = 'list-row';
 
       var statusEl = document.createElement('div');
-      if(isReading(item)){
+      if(item.kind === 'manual'){
+        statusEl.className = 'row-status manual';
+        statusEl.innerHTML = ICONS.manual;
+        statusEl.title = 'Valor adicionado manualmente';
+      } else if(isReading(item)){
         statusEl.className = 'row-status spin';
         statusEl.innerHTML = ICONS.spinner;
       } else {
@@ -955,7 +1057,9 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
 
       var sub = document.createElement('div');
       sub.className = 'fsub';
-      if(item.status === 'processing') {
+      if(item.kind === 'manual') {
+        sub.textContent = 'adicionado manualmente';
+      } else if(item.status === 'processing') {
         sub.textContent = 'lendo texto…';
       } else if(item.status === 'ocr') {
         sub.textContent = 'lendo imagem' + (item.ocrPages > 1 ? ' ' + item.ocrPage + '/' + item.ocrPages : '') + (item.ocrProgress ? ' — ' + item.ocrProgress + '%' : '') + '…';
@@ -1004,8 +1108,13 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
     var total = state.items.reduce(function(sum, it){
       return sum + (typeof it.amount === 'number' ? it.amount : 0);
     }, 0);
+    var documentCount = state.items.filter(function(it){ return it.kind !== 'manual'; }).length;
+    var manualCount = n - documentCount;
+    var labels = [];
+    if(documentCount) labels.push(documentCount === 1 ? '1 conta' : documentCount + ' contas');
+    if(manualCount) labels.push(manualCount === 1 ? '1 valor avulso' : manualCount + ' valores avulsos');
     totalValueEl.textContent = fmtBRL(total);
-    countLabel.textContent = n === 1 ? '1 conta' : n + ' contas';
+    countLabel.textContent = labels.join(' + ');
   }
 
   function startEdit(id){
@@ -1048,6 +1157,42 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
       if(e.key === 'Enter'){ e.preventDefault(); input.blur(); }
       if(e.key === 'Escape'){ e.preventDefault(); cancelled = true; render(); }
     });
+  }
+
+  function resetManualValueForm(){
+    manualValueForm.reset();
+    manualValueError.textContent = '';
+    manualValueError.hidden = true;
+  }
+
+  function openManualValueDialog(){
+    resetManualValueForm();
+    openDialog(manualValueDialog);
+  }
+
+  function addManualValue(){
+    var amount = parseBRLNumber(manualValueInput.value);
+    if(amount === null || amount <= 0){
+      manualValueError.textContent = 'Informe um valor maior que zero no formato brasileiro.';
+      manualValueError.hidden = false;
+      manualValueInput.focus();
+      return;
+    }
+
+    var description = manualValueDescription.value.trim() || 'Valor avulso';
+    state.items.push({
+      id: nextId++,
+      kind: 'manual',
+      filename: description,
+      amount: amount,
+      due: null,
+      status: 'ok',
+      confidence: 'manual',
+      cancelled: false
+    });
+    render();
+    closeDialog(manualValueDialog);
+    showToast('Valor avulso adicionado ao total.');
   }
 
   function removeItem(id){
@@ -1129,12 +1274,15 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
 
   function runAppAction(action){
     if(action === 'open-files') openFileChooser();
+    if(action === 'add-manual') openManualValueDialog();
     if(action === 'clear') clearItems();
     if(action === 'manual') openDialog(manualDialog);
     if(action === 'about') openDialog(aboutDialog);
   }
 
   chooseBtn.addEventListener('click', openFileChooser);
+  addManualEmptyBtn.addEventListener('click', openManualValueDialog);
+  addManualBtn.addEventListener('click', openManualValueDialog);
   addRow.addEventListener('click', openFileChooser);
   addRow.addEventListener('keydown', function(e){
     if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openFileChooser(); }
@@ -1142,6 +1290,10 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
   fileInput.addEventListener('change', function(){
     addFiles(fileInput.files);
     fileInput.value = '';
+  });
+  manualValueForm.addEventListener('submit', function(event){
+    event.preventDefault();
+    addManualValue();
   });
 
   ['dragenter','dragover'].forEach(function(evt){
@@ -1167,6 +1319,7 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
 
   appMenuButton.addEventListener('click', function(){ setMenuOpen(appMenu.hidden); });
   menuOpenFiles.addEventListener('click', function(){ runAppAction('open-files'); });
+  menuAddManualValue.addEventListener('click', function(){ runAppAction('add-manual'); });
   menuClear.addEventListener('click', function(){ runAppAction('clear'); });
   menuManual.addEventListener('click', function(){ runAppAction('manual'); });
   menuAbout.addEventListener('click', function(){ runAppAction('about'); });
@@ -1174,7 +1327,7 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
   document.querySelectorAll('[data-dialog-close]').forEach(function(button){
     button.addEventListener('click', function(){ closeDialog(button.closest('.dialog-backdrop')); });
   });
-  [manualDialog, aboutDialog].forEach(function(dialog){
+  [manualValueDialog, manualDialog, aboutDialog].forEach(function(dialog){
     dialog.addEventListener('click', function(event){
       if(event.target === dialog) closeDialog(dialog);
     });

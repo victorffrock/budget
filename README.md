@@ -45,6 +45,10 @@ A partir da versão 3.1.0, o AppImage traz os dados de atualização do GitHub i
 
 Os valores encontrados são editáveis. A edição aceita somente números brasileiros, como `123,45` ou `1.234,56`; uma entrada inválida preserva o valor anterior. Cada linha mostra um indicador de confiança (✓ / ⚠ / ?).
 
+### Valores avulsos
+
+Use **Adicionar valor avulso** para incluir uma despesa que não está em um PDF, como estacionamento ou uma taxa. A descrição é opcional, o valor usa o mesmo formato brasileiro e entra imediatamente no total. Valores avulsos também podem ser editados ou removidos a qualquer momento.
+
 Não é perfeito. Boletos muito diferentes do padrão brasileiro podem precisar de ajuste manual.
 
 ### PDFs escaneados (OCR)

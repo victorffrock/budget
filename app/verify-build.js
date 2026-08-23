@@ -5,6 +5,7 @@ const path = require('node:path');
 const appDir = __dirname;
 const bundled = fs.readFileSync(path.join(appDir, 'somador-de-contas.html'), 'utf8');
 const site = fs.readFileSync(path.join(appDir, '..', 'index.html'), 'utf8');
+const desktop = fs.readFileSync(path.join(appDir, '..', 'desktop', 'index.html'), 'utf8');
 const appPackage = require(path.join(appDir, 'package.json'));
 const desktopPackage = require(path.join(appDir, '..', 'desktop', 'package.json'));
 const pwaHead = [
@@ -33,5 +34,6 @@ assert.equal(
   bundled,
   'site e aplicativo devem usar a mesma interface gerada'
 );
+assert.equal(desktop, bundled, 'aplicativo desktop e versão offline devem usar a mesma interface gerada');
 
 console.log('HTML gerado e versão PWA estão sincronizados.');

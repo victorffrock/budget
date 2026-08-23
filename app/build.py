@@ -110,6 +110,13 @@ def main():
 
     # Também atualiza o index.html da raiz (versão web + PWA)
     root_index = HERE.parent / "index.html"
+    desktop_index = HERE.parent / "desktop" / "index.html"
+
+    # Mantém a janela Electron pronta para desenvolvimento sem depender de
+    # uma compilação de AppImage, que também copia este mesmo arquivo.
+    desktop_index.write_text(html, encoding="utf-8")
+    print(f"wrote {desktop_index} ({len(html):,} bytes)")
+
     pwa_head = """<link rel="icon" href="icon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="manifest" href="manifest.webmanifest">

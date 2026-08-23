@@ -26,3 +26,13 @@ test('oferece OCR local como alternativa para PDFs escaneados', () => {
   assert.match(template, /var MAX_OCR_PAGES = 4;/);
   assert.match(template, /var MAX_OCR_FILE_BYTES = 25 \* 1024 \* 1024;/);
 });
+
+test('permite somar valores avulsos com uma descrição opcional', () => {
+  assert.match(template, /id="manualValueDialog"/);
+  assert.match(template, /Adicionar valor avulso/);
+  assert.match(template, /id="manualValueDescription"/);
+  assert.match(template, /id="manualValueInput"/);
+  assert.match(template, /kind: 'manual'/);
+  assert.match(template, /Valor avulso adicionado ao total/);
+  assert.match(template, /action === 'add-manual'/);
+});
