@@ -98,7 +98,6 @@
   }
   body.is-desktop .headerbar{
     -webkit-app-region: drag;
-    app-region: drag;
     user-select:none;
   }
   .hb-start{
@@ -127,7 +126,6 @@
     position:relative;
     display:flex;
     -webkit-app-region:no-drag;
-    app-region:no-drag;
   }
   .menu-button,.dialog-close{
     width:32px;
@@ -189,7 +187,6 @@
     align-items:center;
     justify-content:center;
     -webkit-app-region: no-drag;
-    app-region: no-drag;
   }
   body.is-desktop .win-btn{ display:inline-flex; }
   .win-btn:hover{ background:var(--light-3); color:var(--text); }
@@ -707,7 +704,7 @@
     <div class="dialog-body about-content">
       <img class="about-icon" id="aboutIcon" alt="Ícone do Somador de Contas" src="">
       <p class="about-name">Somador de Contas</p>
-      <p class="about-version">Versão 4.1.0</p>
+      <p class="about-version">Versão 4.1.1</p>
       <p class="about-description">Uma ferramenta simples para somar valores de boletos e faturas em PDF, sem enviar seus documentos para a internet.</p>
       <p class="about-author">Desenvolvido por Victor Ferreira Franco</p>
       <div class="about-links">
@@ -939,12 +936,39 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     toastTimer = window.setTimeout(function(){ toast.hidden = true; }, 5000);
   }
 
-  function setMenuOpen(open){
+  function getMenuItems(){
+    return Array.prototype.filter.call(appMenu.querySelectorAll('.menu-item'), function(item){
+      return !item.disabled;
+    });
+  }
+
+  function setMenuOpen(open, restoreFocus){
+    var wasOpen = !appMenu.hidden;
     appMenu.hidden = !open;
     appMenuButton.setAttribute('aria-expanded', String(open));
     if(open){
-      var firstItem = appMenu.querySelector('.menu-item:not(:disabled)');
+      var firstItem = getMenuItems()[0];
       if(firstItem) firstItem.focus();
+    } else if(restoreFocus && wasOpen){
+      appMenuButton.focus();
+    }
+  }
+
+  function keepFocusInsideDialog(event){
+    var focusable = Array.prototype.filter.call(
+      activeDialog.querySelectorAll('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'),
+      function(element){ return !element.hidden && element.getClientRects().length > 0; }
+    );
+    if(!focusable.length) return;
+
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if(event.shiftKey && document.activeElement === first){
+      event.preventDefault();
+      last.focus();
+    } else if(!event.shiftKey && document.activeElement === last){
+      event.preventDefault();
+      first.focus();
     }
   }
 
@@ -1399,6 +1423,7 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   function openFileChooser(){ fileInput.click(); }
 
   function runAppAction(action){
+    setMenuOpen(false, true);
     if(action === 'open-files') openFileChooser();
     if(action === 'add-manual') openManualValueDialog();
     if(action === 'clear') clearItems();
@@ -1443,6 +1468,13 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   clearBtn.addEventListener('click', clearItems);
 
   appMenuButton.addEventListener('click', function(){ setMenuOpen(appMenu.hidden); });
+  appMenuButton.addEventListener('keydown', function(event){
+    if(event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    event.preventDefault();
+    setMenuOpen(true);
+    var menuItems = getMenuItems();
+    if(event.key === 'ArrowUp' && menuItems.length) menuItems[menuItems.length - 1].focus();
+  });
   menuOpenFiles.addEventListener('click', function(){ runAppAction('open-files'); });
   menuAddManualValue.addEventListener('click', function(){ runAppAction('add-manual'); });
   menuClear.addEventListener('click', function(){ runAppAction('clear'); });
@@ -1462,10 +1494,31 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     if(!menuWrap.contains(event.target)) setMenuOpen(false);
   });
   document.addEventListener('keydown', function(event){
-    if(event.key === 'Escape'){
-      if(activeDialog) closeDialog(activeDialog);
-      else setMenuOpen(false);
+    if(activeDialog){
+      if(event.key === 'Tab') keepFocusInsideDialog(event);
+      if(event.key === 'Escape') closeDialog(activeDialog);
       return;
+    }
+    if(event.key === 'Escape'){
+      setMenuOpen(false, true);
+      return;
+    }
+    if(!appMenu.hidden){
+      var menuItems = getMenuItems();
+      var index = menuItems.indexOf(document.activeElement);
+      if(event.key === 'ArrowDown' || event.key === 'ArrowUp'){
+        event.preventDefault();
+        if(menuItems.length){
+          var direction = event.key === 'ArrowDown' ? 1 : -1;
+          menuItems[(index + direction + menuItems.length) % menuItems.length].focus();
+        }
+        return;
+      }
+      if(event.key === 'Home' || event.key === 'End'){
+        event.preventDefault();
+        if(menuItems.length) menuItems[event.key === 'Home' ? 0 : menuItems.length - 1].focus();
+        return;
+      }
     }
     if((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o'){
       event.preventDefault();

@@ -13,6 +13,14 @@ test('oferece menu e diálogos acessíveis seguindo a experiência GNOME', () =>
   assert.match(template, /Gear Lever/);
 });
 
+test('mantém o foco acessível no menu e nos diálogos', () => {
+  assert.doesNotMatch(template, /^\s*app-region\s*:/m);
+  assert.match(template, /-webkit-app-region: drag/);
+  assert.match(template, /function keepFocusInsideDialog/);
+  assert.match(template, /event\.key === 'ArrowDown'/);
+  assert.match(template, /setMenuOpen\(false, true\)/);
+});
+
 test('mantém uma versão explícita para o diálogo Sobre', () => {
   assert.match(template, /Versão __APP_VERSION__/);
   assert.match(template, /Victor Ferreira Franco/);

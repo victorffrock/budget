@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createApplicationMenuTemplate } = require('../menu.js');
+const desktopPackage = require('../package.json');
 
 test('oferece ações de arquivo e ajuda no menu nativo', () => {
   const actions = [];
@@ -23,4 +24,8 @@ test('oferece ações de arquivo e ajuda no menu nativo', () => {
   helpItems[1].click();
   fileItems[3].click();
   assert.deepEqual(actions, ['open-files', 'add-manual', 'manual', 'about', 'quit']);
+});
+
+test('mantém a permissão de instalação do Electron na versão empacotada', () => {
+  assert.equal(desktopPackage.allowScripts['electron@' + desktopPackage.devDependencies.electron], true);
 });
