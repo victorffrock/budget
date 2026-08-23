@@ -21,6 +21,13 @@ test('mantém o foco acessível no menu e nos diálogos', () => {
   assert.match(template, /setMenuOpen\(false, true\)/);
 });
 
+test('mantém a barra de título visível enquanto o conteúdo do app rola', () => {
+  assert.match(template, /\.headerbar\{[\s\S]*?position:sticky;[\s\S]*?top:0;[\s\S]*?z-index:30;/);
+  assert.match(template, /body\.is-desktop\{[\s\S]*?overflow:hidden;/);
+  assert.match(template, /\.app-window\{[\s\S]*?height:100vh;[\s\S]*?overflow:hidden;/);
+  assert.match(template, /\.content\{[\s\S]*?min-height:0;[\s\S]*?overflow-y:auto;/);
+});
+
 test('mantém uma versão explícita para o diálogo Sobre', () => {
   assert.match(template, /Versão __APP_VERSION__/);
   assert.match(template, /Victor Ferreira Franco/);
