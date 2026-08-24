@@ -15,5 +15,5 @@
     "pdfjs-dist": "6.2.108",
     "tesseract.js": "^7.0.0"
   },
-  "version": "6.0.0-test.1"
+  "version": "6.0.0"
 }
