@@ -30,19 +30,26 @@ O AppImage usa runtime estático e não requer FUSE.
 ### Verificar um download
 
 Cada release inclui o arquivo `SHA256SUMS.txt`. Após baixar os arquivos na
-mesma pasta, confira a integridade antes de executar:
+mesma pasta, confira a integridade antes de executar. O parâmetro
+`--ignore-missing` permite verificar somente os arquivos que você baixou:
 
 ```sh
-sha256sum -c SHA256SUMS.txt
+sha256sum -c --ignore-missing SHA256SUMS.txt
 ```
 
-As releases futuras também registram a procedência do AppImage no GitHub. Com
-o GitHub CLI, ela pode ser verificada assim:
+Quando o workflow da release registra uma atestação de procedência, também é
+possível confirmar que o AppImage foi produzido pelo workflow oficial do
+repositório. Com o [GitHub CLI](https://cli.github.com/), use:
 
 ```sh
 gh attestation verify Somador-de-Contas-*-x86_64.AppImage \
   --repo victorffrock/somador-de-contas
 ```
+
+O arquivo `SBOM-app.cdx.json` lista as dependências da aplicação web e
+`SBOM-desktop.cdx.json` lista as do aplicativo Electron. Eles estão no formato
+aberto CycloneDX e servem para auditoria; não são necessários para abrir o
+programa.
 
 ### Experiência GNOME
 
@@ -57,6 +64,18 @@ Atalhos disponíveis:
 ### Atualizações pelo Gear Lever
 
 A partir da versão 3.1.0, o AppImage traz os dados de atualização do GitHub incorporados. Abra a versão 3.1.0 ou posterior no Gear Lever e integre-a ao menu de aplicações. Depois disso, o próprio Gear Lever identifica e instala as próximas releases automaticamente.
+
+### Versões estáveis e de teste
+
+O projeto mantém duas branches permanentes:
+
+- `test`: recebe mudanças e pré-releases para validação;
+- `main`: contém somente versões estáveis publicadas.
+
+Uma pré-release nunca substitui a versão estável indicada pelo Gear Lever. A
+promoção para `main` só acontece depois dos testes automatizados e da
+verificação manual da pré-release. O processo completo de publicação está em
+[docs/RELEASES.md](docs/RELEASES.md).
 
 ## Observações
 
@@ -112,6 +131,15 @@ npm run test:ui
 
 `npm run test:ui` abre uma janela Electron invisível e valida os fluxos de
 interface, incluindo valores avulsos, saldo disponível, rolagem e limpeza.
+Em máquinas sem sessão gráfica, execute-a em uma tela virtual, por exemplo com
+`xvfb-run --auto-servernum npm run test:ui`.
+
+De volta à raiz do repositório, confira também se as versões distribuídas
+continuam sincronizadas:
+
+```sh
+node scripts/verify-release-version.cjs
+```
 
 Para uma release deste repositório, use:
 

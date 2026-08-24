@@ -2,7 +2,9 @@
 
 ## Versões com suporte
 
-Recebe correções de segurança apenas a versão mais recente publicada na página de releases.
+Recebe correções de segurança somente a versão estável mais recente publicada
+na [página de releases](../../releases). Pré-releases da branch `test` existem
+para validação e não substituem uma versão estável.
 
 ## Relatar uma vulnerabilidade
 
@@ -14,14 +16,34 @@ O Somador de Contas processa PDFs, OCR e valores localmente. Alterações que po
 
 ## Integridade das releases
 
-As releases incluem `SHA256SUMS.txt` para conferir os arquivos baixados. A
-automação também gera uma atestação de procedência do AppImage no GitHub e
-publica SBOMs no formato CycloneDX para as dependências da aplicação e do
-desktop. Essas verificações ajudam a confirmar que o arquivo veio do workflow
-oficial e permitem revisar os componentes incluídos na distribuição.
+As releases incluem `SHA256SUMS.txt` para conferir os arquivos baixados. Quando
+o workflow da release registra uma atestação, o GitHub também guarda a
+procedência do AppImage. O repositório publica ainda SBOMs no formato CycloneDX
+para as dependências da aplicação e do desktop.
 
-## Automação de segurança
+Antes de executar um arquivo, baixe os assets da mesma release e rode:
 
-O repositório executa testes, auditoria de dependências, revisão de novas
-dependências em pull requests, análise CodeQL e validação do AppImage. As
-Actions são fixadas em commits imutáveis e atualizadas pelo Dependabot.
+```sh
+sha256sum -c --ignore-missing SHA256SUMS.txt
+gh attestation verify Somador-de-Contas-*-x86_64.AppImage \
+  --repo victorffrock/somador-de-contas
+```
+
+O segundo comando requer o GitHub CLI e é aplicável quando a release tem uma
+atestação. Ele confirma a origem do artefato; a soma SHA-256 confirma que o
+arquivo baixado não foi alterado.
+
+## Controles automatizados
+
+| Controle | Quando roda | Objetivo |
+| --- | --- | --- |
+| Testes da aplicação e do Electron | push para `main` e `test` | detectar regressões de cálculo e interface |
+| Auditoria do npm | CI | impedir dependências com vulnerabilidades altas conhecidas |
+| Revisão de dependências | pull requests | destacar novas dependências vulneráveis antes da mesclagem |
+| CodeQL | push e pull requests | analisar padrões de código potencialmente inseguros |
+| Validação do AppImage e SBOM | CI e release | verificar atualização, distribuição e inventário de componentes |
+| Atestação de procedência | publicação de release | vincular o AppImage ao workflow oficial |
+
+As Actions são fixadas em commits imutáveis e atualizadas pelo Dependabot. O
+Electron é executado com isolamento de contexto, sandbox e integração Node
+desativada na interface de usuário.
