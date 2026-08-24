@@ -1,12 +1,12 @@
 {
-  "name": "somador-de-contas",
-  "version": "5.0.1",
+  "name": "budget",
+  "version": "6.0.0-test.1",
   "description": "Soma o valor de boletos em PDF, tudo processado localmente no seu computador. Visual baseado no GNOME HIG.",
   "author": "Victor Ferreira Franco",
-  "homepage": "https://github.com/victorffrock/somador-de-contas",
-  "repository": "https://github.com/victorffrock/somador-de-contas.git",
+  "homepage": "https://github.com/victorffrock/budget",
+  "repository": "https://github.com/victorffrock/budget.git",
   "license": "GPL-3.0-or-later",
-  "desktopName": "br.com.victorferreirafranco.somadordecontas",
+  "desktopName": "br.com.victorferreirafranco.budget",
   "main": "main.js",
   "private": true,
   "engines": {
@@ -26,9 +26,9 @@
     "toolsets": {
       "appimage": "1.0.3"
     },
-    "artifactName": "Somador-de-Contas-${version}-x86_64.${ext}",
-    "appId": "br.com.victorferreirafranco.somadordecontas",
-    "productName": "Somador de Contas",
+    "artifactName": "Budget-${version}-x86_64.${ext}",
+    "appId": "br.com.victorferreirafranco.budget",
+    "productName": "Budget",
     "files": [
       "main.js",
       "menu.js",

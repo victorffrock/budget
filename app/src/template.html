@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Somador de Contas</title>
+<title>Budget</title>
 <style>
   /*
     Paleta e tipografia seguem o GNOME Human Interface Guidelines
@@ -661,7 +661,7 @@
     <div class="hb-start">
       <img id="hbIcon" alt="" src="">
     </div>
-    <h1 class="hb-title">Somador de Contas</h1>
+    <h1 class="hb-title">Budget</h1>
     <div class="hb-end">
       <div class="menu-wrap" id="menuWrap">
         <button type="button" class="menu-button" id="appMenuButton" title="Menu" aria-label="Menu" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu">
@@ -673,7 +673,7 @@
           <button type="button" class="menu-item" id="menuClear" role="menuitem" disabled>Limpar contas</button>
           <div class="menu-separator" role="separator"></div>
           <button type="button" class="menu-item" id="menuManual" role="menuitem">Manual <span class="menu-shortcut">F1</span></button>
-          <button type="button" class="menu-item" id="menuAbout" role="menuitem">Sobre o Somador de Contas</button>
+          <button type="button" class="menu-item" id="menuAbout" role="menuitem">Sobre o Budget</button>
         </div>
       </div>
       <button type="button" class="win-btn" id="btnMinimize" title="Minimizar" aria-label="Minimizar">
@@ -817,14 +817,14 @@
       </button>
     </header>
     <div class="dialog-body about-content">
-      <img class="about-icon" id="aboutIcon" alt="Ícone do Somador de Contas" src="">
-      <p class="about-name">Somador de Contas</p>
+      <img class="about-icon" id="aboutIcon" alt="Ícone do Budget" src="">
+      <p class="about-name">Budget</p>
       <p class="about-version">Versão __APP_VERSION__</p>
       <p class="about-description">Uma ferramenta simples para somar valores de boletos e faturas em PDF, sem enviar seus documentos para a internet.</p>
       <p class="about-author">Desenvolvido por Victor Ferreira Franco</p>
       <div class="about-links">
-        <a href="https://github.com/victorffrock/somador-de-contas" target="_blank" rel="noopener noreferrer">Código-fonte</a>
-        <a href="https://github.com/victorffrock/somador-de-contas/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licença GPLv3</a>
+        <a href="https://github.com/victorffrock/budget" target="_blank" rel="noopener noreferrer">Código-fonte</a>
+        <a href="https://github.com/victorffrock/budget/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licença GPLv3</a>
       </div>
     </div>
   </section>
@@ -864,23 +864,23 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
   document.getElementById('hbIcon').src = APP_ICON_DATA_URI;
   document.getElementById('aboutIcon').src = APP_ICON_DATA_URI;
 
-  if (window.somadorDesktop && window.somadorDesktop.isDesktop) {
+  if (window.budgetDesktop && window.budgetDesktop.isDesktop) {
     document.body.classList.add('is-desktop');
     var btnMin = document.getElementById('btnMinimize');
     var btnClose = document.getElementById('btnClose');
-    if (btnMin) btnMin.addEventListener('click', function(){ window.somadorDesktop.minimize(); });
-    if (btnClose) btnClose.addEventListener('click', function(){ window.somadorDesktop.close(); });
+    if (btnMin) btnMin.addEventListener('click', function(){ window.budgetDesktop.minimize(); });
+    if (btnClose) btnClose.addEventListener('click', function(){ window.budgetDesktop.close(); });
   }
 
-  var State = window.SomadorState;
-  var UiLayout = window.SomadorUiLayout;
-  var Dialogs = window.SomadorDialogs;
+  var State = window.BudgetState;
+  var UiLayout = window.BudgetUiLayout;
+  var Dialogs = window.BudgetDialogs;
   var state = State.createAppState();
   var nextId = 1;
   var MAX_OCR_PAGES = 4;
   var MAX_OCR_FILE_BYTES = 25 * 1024 * 1024;
   var MAX_OCR_RENDER_SIDE = 2200;
-  var OCR_LANGUAGE_PATH = 'https://somador.local/tessdata';
+  var OCR_LANGUAGE_PATH = 'https://budget.local/tessdata';
   var ocrWorker = null;
   var ocrWorkerPromise = null;
   var ocrWorkerURL = null;
@@ -975,12 +975,12 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
     return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
-  var parseBRLNumber = window.SomadorCore.parseBRLNumber;
-  var calculateRemainingBalance = window.SomadorCore.calculateRemainingBalance;
-  var normalizeText = window.SomadorCore.normalizeText;
-  var extractFromOcrText = window.SomadorCore.extractFromOcrText;
-  var extractFromText = window.SomadorCore.extractFromText;
-  var shouldUseOcr = window.SomadorCore.shouldUseOcr;
+  var parseBRLNumber = window.BudgetCore.parseBRLNumber;
+  var calculateRemainingBalance = window.BudgetCore.calculateRemainingBalance;
+  var normalizeText = window.BudgetCore.normalizeText;
+  var extractFromOcrText = window.BudgetCore.extractFromOcrText;
+  var extractFromText = window.BudgetCore.extractFromText;
+  var shouldUseOcr = window.BudgetCore.shouldUseOcr;
 
   function isReading(item){
     return item.status === 'processing' || item.status === 'ocr';
@@ -1544,15 +1544,15 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
     }
   });
 
-  if(window.somadorDesktop && typeof window.somadorDesktop.onAppAction === 'function'){
-    window.somadorDesktop.onAppAction(runAppAction);
+  if(window.budgetDesktop && typeof window.budgetDesktop.onAppAction === 'function'){
+    window.budgetDesktop.onAppAction(runAppAction);
   }
 
   render();
   // Sinal explícito para a suíte de interface aguardar a inicialização real
   // do módulo antes de simular interações do usuário.
-  document.body.dataset.somadorReady = 'true';
-  window.dispatchEvent(new Event('somador-ready'));
+  document.body.dataset.budgetReady = 'true';
+  window.dispatchEvent(new Event('budget-ready'));
 })();
 </script>
 <script>

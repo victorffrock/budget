@@ -1,7 +1,7 @@
 {
-  "name": "somador-de-contas-app",
+  "name": "budget-app",
   "private": true,
-  "description": "Build script para gerar o somador-de-contas.html autocontido (offline).",
+  "description": "Build script para gerar o budget.html autocontido (offline).",
   "engines": {
     "node": ">=22.13.0"
   },
@@ -15,5 +15,5 @@
     "pdfjs-dist": "6.2.108",
     "tesseract.js": "^7.0.0"
   },
-  "version": "5.0.1"
+  "version": "6.0.0-test.1"
 }

@@ -1,7 +1,7 @@
 (function (root, factory) {
   var api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
-  root.SomadorState = api;
+  root.BudgetState = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 

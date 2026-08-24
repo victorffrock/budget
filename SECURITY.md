@@ -12,7 +12,7 @@ Não publique detalhes exploráveis em uma issue. Entre em contato com [@victorf
 
 ## Privacidade do aplicativo
 
-O Somador de Contas processa PDFs, OCR e valores localmente. Alterações que possam introduzir envio de documentos, telemetria ou dependência de serviços externos precisam ser discutidas antes de serem aceitas.
+O Budget processa PDFs, OCR e valores localmente. Alterações que possam introduzir envio de documentos, telemetria ou dependência de serviços externos precisam ser discutidas antes de serem aceitas.
 
 ## Integridade das releases
 
@@ -25,8 +25,8 @@ Antes de executar um arquivo, baixe os assets da mesma release e rode:
 
 ```sh
 sha256sum -c --ignore-missing SHA256SUMS.txt
-gh attestation verify Somador-de-Contas-*-x86_64.AppImage \
-  --repo victorffrock/somador-de-contas
+gh attestation verify Budget-*-x86_64.AppImage \
+  --repo victorffrock/budget
 ```
 
 O segundo comando requer o GitHub CLI e é aplicável quando a release tem uma

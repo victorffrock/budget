@@ -1,4 +1,4 @@
-# Somador de Contas
+# Budget
 
 Ferramenta simples para somar valores de boletos e faturas em PDF.
 
@@ -6,13 +6,13 @@ Feita para uso pessoal. Não tem grandes pretensões: só evita que você precis
 
 Tudo roda localmente no seu computador. Nenhum arquivo sai da máquina.
 
-![Somador de Contas](screenshot.png)
+![Budget](screenshot.png)
 
 ## Como usar
 
 **No navegador (sem instalar nada):**
 
-- Abra o [index.html](index.html) ou o [app/somador-de-contas.html](app/somador-de-contas.html).
+- Abra o [index.html](index.html) ou o [app/budget.html](app/budget.html).
 
 Funciona offline. Confira valores identificados com baixa confiança antes de pagar.
 
@@ -21,8 +21,8 @@ Funciona offline. Confira valores identificados com baixa confiança antes de pa
 Baixe o `.AppImage` na [página de releases](../../releases), dê permissão e execute:
 
 ```sh
-chmod +x Somador-de-Contas-*-x86_64.AppImage
-./Somador-de-Contas-*-x86_64.AppImage
+chmod +x Budget-*-x86_64.AppImage
+./Budget-*-x86_64.AppImage
 ```
 
 O AppImage usa runtime estático e não requer FUSE.
@@ -42,8 +42,8 @@ possível confirmar que o AppImage foi produzido pelo workflow oficial do
 repositório. Com o [GitHub CLI](https://cli.github.com/), use:
 
 ```sh
-gh attestation verify Somador-de-Contas-*-x86_64.AppImage \
-  --repo victorffrock/somador-de-contas
+gh attestation verify Budget-*-x86_64.AppImage \
+  --repo victorffrock/budget
 ```
 
 O arquivo `SBOM-app.cdx.json` lista as dependências da aplicação web e
@@ -63,7 +63,13 @@ Atalhos disponíveis:
 
 ### Atualizações pelo Gear Lever
 
-A partir da versão 3.1.0, o AppImage traz os dados de atualização do GitHub incorporados. Abra a versão 3.1.0 ou posterior no Gear Lever e integre-a ao menu de aplicações. Depois disso, o próprio Gear Lever identifica e instala as próximas releases automaticamente.
+O AppImage do Budget traz os dados de atualização do GitHub incorporados. Abra
+a versão atual no Gear Lever e integre-a ao menu de aplicações. Depois disso,
+o próprio Gear Lever identifica e instala as próximas releases automaticamente.
+
+Esta mudança de identidade exige uma atualização manual única para instalações
+anteriores: baixe o AppImage atual na página de releases e integre-o novamente.
+Após essa primeira instalação, as atualizações voltam a ser automáticas.
 
 ### Versões estáveis e de teste
 
@@ -117,7 +123,7 @@ npm run build
 npm run verify
 ```
 
-Isso atualiza `app/somador-de-contas.html` e `index.html`.
+Isso atualiza `app/budget.html` e `index.html`.
 
 ### 2. Gerar o AppImage
 
@@ -144,7 +150,7 @@ node scripts/verify-release-version.cjs
 Para uma release deste repositório, use:
 
 ```sh
-APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync' \
+APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync' \
 ../scripts/build-appimage.sh
 ```
 

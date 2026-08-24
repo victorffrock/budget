@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
       - run: npm run verify
       - run: node ../scripts/verify-release-version.cjs
-      - run: git diff --exit-code -- somador-de-contas.html ../index.html
+      - run: git diff --exit-code -- budget.html ../index.html
       - run: node --check ../sw.js
 
   desktop:
@@ -62,7 +62,7 @@ jobs:
     name: AppImage atualizável
     runs-on: ubuntu-latest
     env:
-      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
+      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -84,19 +84,19 @@ jobs:
         run: |
           npm run build
           npm run verify
-          git diff --exit-code -- somador-de-contas.html ../index.html
+          git diff --exit-code -- budget.html ../index.html
       - name: Instalar dependências do desktop
         working-directory: desktop
         run: npm ci
       - name: Validar SBOMs
         run: |
-          npm --prefix app sbom --sbom-format=cyclonedx --package-lock-only > /tmp/somador-app.sbom.cdx.json
-          npm --prefix desktop sbom --sbom-format=cyclonedx --package-lock-only > /tmp/somador-desktop.sbom.cdx.json
-          node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" /tmp/somador-app.sbom.cdx.json /tmp/somador-desktop.sbom.cdx.json
+          npm --prefix app sbom --sbom-format=cyclonedx --package-lock-only > /tmp/budget-app.sbom.cdx.json
+          npm --prefix desktop sbom --sbom-format=cyclonedx --package-lock-only > /tmp/budget-desktop.sbom.cdx.json
+          node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" /tmp/budget-app.sbom.cdx.json /tmp/budget-desktop.sbom.cdx.json
       - name: Gerar e validar AppImage
         run: |
           ./scripts/build-appimage.sh
-          cmp app/somador-de-contas.html desktop/index.html
+          cmp app/budget.html desktop/index.html
           appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
           test -n "$appimage"
           test -x "$appimage"

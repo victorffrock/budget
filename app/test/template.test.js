@@ -9,7 +9,7 @@ test('oferece menu e diálogos acessíveis seguindo a experiência GNOME', () =>
   assert.match(template, /aria-haspopup="menu"/);
   assert.match(template, /role="menu"/);
   assert.match(template, /role="dialog" aria-modal="true"/);
-  assert.match(template, /Sobre o Somador de Contas/);
+  assert.match(template, /Sobre o Budget/);
   assert.match(template, /Gear Lever/);
 });
 

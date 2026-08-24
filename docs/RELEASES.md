@@ -1,7 +1,7 @@
 # Publicação de versões
 
 Este documento descreve como uma alteração passa pela validação até se tornar
-uma release estável do Somador de Contas. Ele existe para que o AppImage, o
+uma release estável do Budget. Ele existe para que o AppImage, o
 site e o código-fonte publiquem exatamente a mesma versão.
 
 ## Branches
@@ -46,12 +46,12 @@ de trabalho.
 
 ## Pré-release
 
-Use uma versão SemVer de pré-release, como `5.0.1-test.1`, em todos os arquivos
+Use uma versão SemVer de pré-release, como `6.0.0-test.1`, em todos os arquivos
 de versão. Depois dos testes, crie e envie uma tag anotada:
 
 ```sh
-git tag -a v5.0.1-test.1 -m "Pré-release 5.0.1-test.1"
-git push origin v5.0.1-test.1
+git tag -a v6.0.0-test.1 -m "Pré-release 6.0.0-test.1"
+git push origin v6.0.0-test.1
 ```
 
 No GitHub, crie a release para essa tag, marque **Pre-release** e publique. O
@@ -74,7 +74,7 @@ versão.
 Depois de aprovar uma pré-release, prepare em `test` o commit final que troca
 somente a identificação de pré-release pela versão estável. Atualize todas as
 fontes de versão, gere novamente o HTML offline, execute a validação de versão
-e espere a CI passar. Assim, por exemplo, `5.0.1-test.1` se torna `5.0.1` antes
+e espere a CI passar. Assim, por exemplo, `6.0.0-test.1` se torna `6.0.0` antes
 da publicação.
 
 Promova então esse commit final de `test` para `main`. Prefira o avanço rápido
@@ -90,8 +90,8 @@ Crie então uma tag estável com a mesma versão distribuída e publique uma
 release sem a marca **Pre-release**:
 
 ```sh
-git tag -a v5.0.1 -m "Release 5.0.1"
-git push origin v5.0.1
+git tag -a v6.0.0 -m "Release 6.0.0"
+git push origin v6.0.0
 ```
 
 O workflow de release só deve ser considerado concluído quando todos os
@@ -102,4 +102,4 @@ verificado com `sha256sum`.
 
 Para corrigir uma versão já estável, faça a correção primeiro em `test`, rode
 toda a validação e promova a alteração para `main`. Não altere nem mova uma tag
-de release já publicada: crie uma nova versão de patch, como `5.0.1`.
+de release já publicada: crie uma nova versão de patch, como `6.0.1`.
