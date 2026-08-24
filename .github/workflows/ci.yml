@@ -15,8 +15,8 @@ jobs:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -26,6 +26,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run verify
+      - run: node ../scripts/verify-release-version.cjs
       - run: git diff --exit-code -- somador-de-contas.html ../index.html
       - run: node --check ../sw.js
 
@@ -36,8 +37,8 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -63,8 +64,8 @@ jobs:
     env:
       APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -87,6 +88,11 @@ jobs:
       - name: Instalar dependências do desktop
         working-directory: desktop
         run: npm ci
+      - name: Validar SBOMs
+        run: |
+          npm --prefix app sbom --sbom-format=cyclonedx --package-lock-only > /tmp/somador-app.sbom.cdx.json
+          npm --prefix desktop sbom --sbom-format=cyclonedx --package-lock-only > /tmp/somador-desktop.sbom.cdx.json
+          node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" /tmp/somador-app.sbom.cdx.json /tmp/somador-desktop.sbom.cdx.json
       - name: Gerar e validar AppImage
         run: |
           ./scripts/build-appimage.sh

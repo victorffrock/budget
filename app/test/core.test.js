@@ -21,8 +21,27 @@ test('aceita valores brasileiros bem formatados', () => {
 });
 
 test('rejeita entrada manual ambígua ou inválida', () => {
-  for (const value of ['', 'abc123', '-10', '1,2,3', '1.234,56x', '12.34']) {
+  for (const value of ['', 'abc123', '-10', '1,2,3', '1.234,56x', '12.34', 'NaN', 'Infinity', '1e3']) {
     assert.equal(parseBRLNumber(value), null, value);
+  }
+});
+
+test('interpretador de valores não lança exceções para entradas hostis', () => {
+  // Pequeno teste de propriedade determinístico: textos vindos de PDF/OCR não
+  // são confiáveis e podem conter combinações inesperadas de caracteres.
+  const alphabet = '0123456789.,R$ -\n\tabc<>{}()[]';
+  let seed = 0x5eed;
+
+  for (let sample = 0; sample < 400; sample += 1) {
+    let value = '';
+    const length = (seed % 32) + 1;
+    for (let index = 0; index < length; index += 1) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      value += alphabet[seed % alphabet.length];
+    }
+
+    const parsed = parseBRLNumber(value);
+    assert.ok(parsed === null || (Number.isFinite(parsed) && parsed >= 0), value);
   }
 });
 
@@ -44,6 +63,17 @@ test('não escolhe um valor quando rótulos igualmente confiáveis divergem', ()
   const result = extractFromText('Valor a pagar 100,00. Valor a pagar 200,00.');
   assert.equal(result.amount, null);
   assert.equal(result.confidence, 'err');
+});
+
+test('prioriza o total identificado mesmo com outros números do documento', () => {
+  const result = extractFromText([
+    'Linha digitável: 00190.00009 01234.567891 23456.789012 3 12340000019999',
+    'Juros por atraso: R$ 12,34',
+    'Valor a pagar: R$ 1.999,90',
+    'Valor original: R$ 1.234,56'
+  ].join('\n'));
+
+  assert.deepEqual(result, { amount: 1999.90, confidence: 'ok', due: null });
 });
 
 test('usa OCR apenas quando a leitura textual não identificou um valor', () => {

@@ -27,6 +27,23 @@ chmod +x Somador-de-Contas-*-x86_64.AppImage
 
 O AppImage usa runtime estático e não requer FUSE.
 
+### Verificar um download
+
+Cada release inclui o arquivo `SHA256SUMS.txt`. Após baixar os arquivos na
+mesma pasta, confira a integridade antes de executar:
+
+```sh
+sha256sum -c SHA256SUMS.txt
+```
+
+As releases futuras também registram a procedência do AppImage no GitHub. Com
+o GitHub CLI, ela pode ser verificada assim:
+
+```sh
+gh attestation verify Somador-de-Contas-*-x86_64.AppImage \
+  --repo victorffrock/somador-de-contas
+```
+
 ### Experiência GNOME
 
 O AppImage usa uma barra de cabeçalho e menu de aplicativo no estilo GNOME. No botão de menu estão o manual integrado, a tela **Sobre** e as ações de adicionar ou limpar contas. No Linux, essas mesmas ações também aparecem no menu nativo **Arquivo** e **Ajuda**.
@@ -51,7 +68,7 @@ Use **Adicionar valor avulso** para incluir uma despesa que não está em um PDF
 
 ### Dinheiro disponível
 
-Depois de adicionar contas, informe quanto dinheiro você tem disponível no cartão abaixo do total. O aplicativo calcula na hora o saldo após pagar tudo: mostra o que sobra, avisa quando o saldo fica zerado ou informa quanto faltará. O campo usa o mesmo formato brasileiro dos demais valores, como `123,45` ou `1.234,56`.
+Informe quanto dinheiro você tem disponível no cartão abaixo do total. Ele está disponível desde o início, mesmo antes de adicionar contas. O aplicativo calcula na hora o saldo após pagar tudo: mostra o que sobra, avisa quando o saldo fica zerado ou informa quanto faltará. O campo usa o mesmo formato brasileiro dos demais valores, como `123,45` ou `1.234,56`.
 
 Não é perfeito. Boletos muito diferentes do padrão brasileiro podem precisar de ajuste manual.
 
