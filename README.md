@@ -55,6 +55,8 @@ programa.
 
 O AppImage usa uma barra de cabeçalho e menu de aplicativo no estilo GNOME. No botão de menu estão o manual integrado, a tela **Sobre** e as ações de adicionar ou limpar contas. No Linux, essas mesmas ações também aparecem no menu nativo **Arquivo** e **Ajuda**.
 
+No mesmo menu, em **Aparência**, o modo **Automático** acompanha o tema do sistema. Na versão web, ele acompanha a preferência de tema do navegador. Os modos **Claro** e **Escuro** podem ser escolhidos manualmente e ficam salvos somente neste computador.
+
 Atalhos disponíveis:
 
 - `Ctrl+O`: adicionar boletos;

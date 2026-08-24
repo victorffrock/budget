@@ -13,6 +13,16 @@ test('oferece menu e diálogos acessíveis seguindo a experiência GNOME', () =>
   assert.match(template, /Gear Lever/);
 });
 
+test('oferece aparência automática e escolha manual persistente', () => {
+  assert.match(template, /data-theme-preference="auto"/);
+  assert.match(template, /data-theme-preference="light"/);
+  assert.match(template, /data-theme-preference="dark"/);
+  assert.match(template, /role="menuitemradio"/);
+  assert.match(template, /prefers-color-scheme:dark/);
+  assert.match(template, /__THEME_JS__/);
+  assert.match(template, /Seguir sistema ou navegador/);
+});
+
 test('mantém o foco acessível no menu e nos diálogos', () => {
   assert.doesNotMatch(template, /^\s*app-region\s*:/m);
   assert.match(template, /-webkit-app-region: drag/);

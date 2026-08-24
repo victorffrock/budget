@@ -72,6 +72,30 @@ async function run() {
       manualActionHostHidden: true
     });
 
+    const themeState = await execute(window, `
+      (() => {
+        document.getElementById('appMenuButton').click();
+        document.getElementById('menuThemeDark').click();
+        return {
+          preference: document.documentElement.dataset.theme,
+          effectiveTheme: document.documentElement.dataset.effectiveTheme,
+          storedPreference: localStorage.getItem('budget-theme'),
+          darkChecked: document.getElementById('menuThemeDark').getAttribute('aria-checked'),
+          autoChecked: document.getElementById('menuThemeAuto').getAttribute('aria-checked')
+        };
+      })()
+    `);
+    assert.deepEqual(themeState, {
+      preference: 'dark',
+      effectiveTheme: 'dark',
+      storedPreference: 'dark',
+      darkChecked: 'true',
+      autoChecked: 'false'
+    });
+
+    await execute(window, `document.getElementById('menuThemeAuto').click()`);
+    assert.equal(await execute(window, `document.documentElement.dataset.theme`), 'auto');
+
     const firstItem = await addManualValue(window, 'Conta de teste', '100,00');
     assert.equal(firstItem.statusHidden, true);
     assert.equal(firstItem.manualActionHidden, false);

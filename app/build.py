@@ -26,6 +26,7 @@ CORE = HERE / "src" / "core.js"
 STATE = HERE / "src" / "state.js"
 UI_LAYOUT = HERE / "src" / "ui-layout.js"
 DIALOGS = HERE / "src" / "dialogs.js"
+THEME = HERE / "src" / "theme.js"
 ICON = HERE.parent / "desktop" / "assets" / "icon.png"
 OUTPUT = HERE / "budget.html"
 PACKAGE = HERE / "package.json"
@@ -87,6 +88,7 @@ def main():
     state = STATE.read_text(encoding="utf-8")
     ui_layout = UI_LAYOUT.read_text(encoding="utf-8")
     dialogs = DIALOGS.read_text(encoding="utf-8")
+    theme = THEME.read_text(encoding="utf-8")
 
     pdf_lib_safe = safe_for_inline_script(pdf_lib)
     pdf_worker_safe = safe_for_inline_script(pdf_worker)
@@ -98,6 +100,7 @@ def main():
     state_safe = safe_for_inline_script(state)
     ui_layout_safe = safe_for_inline_script(ui_layout)
     dialogs_safe = safe_for_inline_script(dialogs)
+    theme_safe = safe_for_inline_script(theme)
     pdf_lib_json = json.dumps(pdf_lib_safe)
     pdf_worker_json = json.dumps(pdf_worker_safe)
     version = json.loads(PACKAGE.read_text(encoding="utf-8"))["version"]
@@ -110,6 +113,7 @@ def main():
     html = html.replace("__APP_STATE_JS__", state_safe)
     html = html.replace("__UI_LAYOUT_JS__", ui_layout_safe)
     html = html.replace("__DIALOGS_JS__", dialogs_safe)
+    html = html.replace("__THEME_JS__", theme_safe)
     html = html.replace("__TESSERACT_JS__", tesseract_lib_safe)
     html = html.replace("__PDFJS_LIB_JSON__", pdf_lib_json)
     html = html.replace("__PDFJS_WORKER_JSON__", pdf_worker_json)
