@@ -16,16 +16,17 @@ O Budget processa PDFs, OCR e valores localmente. Alterações que possam introd
 
 ## Integridade das releases
 
-As releases incluem `SHA256SUMS.txt` para conferir os arquivos baixados. Quando
-o workflow da release registra uma atestação, o GitHub também guarda a
-procedência do AppImage. O repositório publica ainda SBOMs no formato CycloneDX
-para as dependências da aplicação e do desktop.
+As releases incluem um arquivo de checksums por arquitetura
+(`SHA256SUMS-x86_64.txt` ou `SHA256SUMS-aarch64.txt`) para conferir os arquivos
+baixados. Quando o workflow da release registra uma atestação, o GitHub também
+guarda a procedência de cada AppImage. O repositório publica ainda SBOMs no
+formato CycloneDX para as dependências da aplicação e do desktop.
 
 Antes de executar um arquivo, baixe os assets da mesma release e rode:
 
 ```sh
-sha256sum -c --ignore-missing SHA256SUMS.txt
-gh attestation verify Budget-*-x86_64.AppImage \
+sha256sum -c --ignore-missing SHA256SUMS-x86_64.txt
+gh attestation verify Budget-*-aarch64.AppImage \
   --repo victorffrock/budget
 ```
 

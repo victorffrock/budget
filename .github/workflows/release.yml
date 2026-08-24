@@ -13,10 +13,20 @@ permissions:
 
 jobs:
   appimage:
-    name: Gerar AppImage
-    runs-on: ubuntu-latest
+    name: Gerar AppImage (${{ matrix.appimage_arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            appimage_arch: x86_64
+          - runner: ubuntu-24.04-arm
+            appimage_arch: aarch64
+    runs-on: ${{ matrix.runner }}
     env:
-      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync
+      BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_IS_PRERELEASE: ${{ github.event.release.prerelease }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -32,6 +42,15 @@ jobs:
           sudo apt-get install --yes zsync
       - name: Validar tag e versões
         run: node scripts/verify-release-version.cjs "${{ github.event.release.tag_name }}"
+      - name: Definir origem de atualização
+        run: |
+          release_channel=latest
+          if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
+            # Pré-releases não devem procurar a release estável como atualização.
+            # Elas apontam para a própria tag e servem somente para teste manual.
+            release_channel="$RELEASE_TAG"
+          fi
+          printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync" >> "$GITHUB_ENV"
       - name: Instalar dependências da aplicação
         working-directory: app
         run: npm ci --ignore-scripts
@@ -46,12 +65,12 @@ jobs:
         run: npm ci
       - name: Gerar AppImage
         run: |
-          ./scripts/build-appimage.sh
+          ./scripts/build-appimage.sh "$BUDGET_APPIMAGE_ARCH"
           cmp app/budget.html desktop/index.html
       - name: Validar atualização sem FUSE
         run: |
-          appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
-          test -n "$appimage"
+          appimage="desktop/dist/Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          test -f "$appimage"
           test -x "$appimage"
           test -s "$appimage.zsync"
           docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
@@ -64,15 +83,19 @@ jobs:
       - name: Gerar checksums
         run: |
           cd desktop/dist
-          npm --prefix ../../app sbom --sbom-format=cyclonedx --package-lock-only > SBOM-app.cdx.json
-          npm --prefix .. sbom --sbom-format=cyclonedx --package-lock-only > SBOM-desktop.cdx.json
-          node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" SBOM-app.cdx.json SBOM-desktop.cdx.json
-          sha256sum *.AppImage *.AppImage.zsync *.cdx.json > SHA256SUMS.txt
+          appimage="Budget-$(node -p "require('../package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          app_sbom="SBOM-app-$BUDGET_APPIMAGE_ARCH.cdx.json"
+          desktop_sbom="SBOM-desktop-$BUDGET_APPIMAGE_ARCH.cdx.json"
+          checksum_file="SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt"
+          npm --prefix ../../app sbom --sbom-format=cyclonedx --package-lock-only > "$app_sbom"
+          npm --prefix .. sbom --sbom-format=cyclonedx --package-lock-only > "$desktop_sbom"
+          node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" "$app_sbom" "$desktop_sbom"
+          sha256sum "$appimage" "$appimage.zsync" "$app_sbom" "$desktop_sbom" > "$checksum_file"
       - name: Atestar a procedência do AppImage
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-path: desktop/dist/*.AppImage
+          subject-path: desktop/dist/Budget-*-${{ matrix.appimage_arch }}.AppImage
       - name: Anexar AppImage e metadados de atualização
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" desktop/dist/*.AppImage desktop/dist/*.AppImage.zsync desktop/dist/*.cdx.json desktop/dist/SHA256SUMS.txt --clobber
+        run: gh release upload "$RELEASE_TAG" desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync desktop/dist/SBOM-*-$BUDGET_APPIMAGE_ARCH.cdx.json desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt --clobber

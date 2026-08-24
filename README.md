@@ -18,23 +18,31 @@ Funciona offline. Confira valores identificados com baixa confiança antes de pa
 
 **AppImage (Linux):**
 
-Baixe o `.AppImage` na [página de releases](../../releases), dê permissão e execute:
+Baixe o arquivo compatível com a arquitetura do seu computador na [página de
+releases](../../releases), dê permissão e execute. Há versões para computadores
+Intel/AMD 64 bits (`x86_64`) e ARM 64 bits (`aarch64`, como Raspberry Pi 4/5):
 
 ```sh
+# Intel/AMD 64 bits
 chmod +x Budget-*-x86_64.AppImage
 ./Budget-*-x86_64.AppImage
+
+# ARM 64 bits
+chmod +x Budget-*-aarch64.AppImage
+./Budget-*-aarch64.AppImage
 ```
 
 O AppImage usa runtime estático e não requer FUSE.
 
 ### Verificar um download
 
-Cada release inclui o arquivo `SHA256SUMS.txt`. Após baixar os arquivos na
-mesma pasta, confira a integridade antes de executar. O parâmetro
+Cada release inclui um arquivo de checksums por arquitetura, como
+`SHA256SUMS-x86_64.txt` ou `SHA256SUMS-aarch64.txt`. Após baixar os arquivos
+na mesma pasta, confira a integridade antes de executar. O parâmetro
 `--ignore-missing` permite verificar somente os arquivos que você baixou:
 
 ```sh
-sha256sum -c --ignore-missing SHA256SUMS.txt
+sha256sum -c --ignore-missing SHA256SUMS-x86_64.txt
 ```
 
 Quando o workflow da release registra uma atestação de procedência, também é
@@ -42,14 +50,14 @@ possível confirmar que o AppImage foi produzido pelo workflow oficial do
 repositório. Com o [GitHub CLI](https://cli.github.com/), use:
 
 ```sh
-gh attestation verify Budget-*-x86_64.AppImage \
+gh attestation verify Budget-*-aarch64.AppImage \
   --repo victorffrock/budget
 ```
 
-O arquivo `SBOM-app.cdx.json` lista as dependências da aplicação web e
-`SBOM-desktop.cdx.json` lista as do aplicativo Electron. Eles estão no formato
-aberto CycloneDX e servem para auditoria; não são necessários para abrir o
-programa.
+Os arquivos `SBOM-app-<arquitetura>.cdx.json` e
+`SBOM-desktop-<arquitetura>.cdx.json` listam, respectivamente, as dependências
+da aplicação web e do aplicativo Electron. Eles estão no formato aberto
+CycloneDX e servem para auditoria; não são necessários para abrir o programa.
 
 ### Experiência GNOME
 
@@ -155,8 +163,12 @@ Para uma release deste repositório, use:
 
 ```sh
 APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync' \
-../scripts/build-appimage.sh
+../scripts/build-appimage.sh x86_64
 ```
+
+Para ARM64, execute o mesmo comando em uma máquina ARM64, trocando a
+arquitetura e o nome do arquivo por `aarch64`. O workflow do GitHub faz isso
+automaticamente para as duas arquiteturas.
 
 ## Licença
 

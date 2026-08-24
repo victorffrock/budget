@@ -57,10 +57,10 @@ git push origin v6.0.0-test.1
 No GitHub, crie a release para essa tag, marque **Pre-release** e publique. O
 workflow `Publicar AppImage` anexa automaticamente:
 
-- o AppImage;
-- o arquivo `.zsync` usado pelo Gear Lever;
-- `SHA256SUMS.txt`;
-- `SBOM-app.cdx.json` e `SBOM-desktop.cdx.json`.
+- os AppImages `x86_64` e `aarch64`;
+- um arquivo `.zsync` para cada arquitetura;
+- `SHA256SUMS-x86_64.txt` e `SHA256SUMS-aarch64.txt`;
+- SBOMs separados para cada arquitetura.
 
 O mesmo workflow registra no GitHub uma atestação de procedência para o
 AppImage. A atestação não é um arquivo anexado à release: ela pode ser
@@ -95,8 +95,8 @@ git push origin v6.0.0
 ```
 
 O workflow de release só deve ser considerado concluído quando todos os
-arquivos acima estiverem anexados, a atestação existir e o AppImage puder ser
-verificado com `sha256sum`.
+arquivos acima estiverem anexados, houver uma atestação para cada AppImage e
+cada arquitetura puder ser verificada com `sha256sum`.
 
 ## Correção de emergência
 

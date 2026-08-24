@@ -6,14 +6,64 @@
 #
 # Uso:
 #   cd app && npm install && npm run build && cd ..
-#   cd desktop && npm install && ../scripts/build-appimage.sh
+#   cd desktop && npm install && ../scripts/build-appimage.sh x86_64
 #
-# Resultado: desktop/dist/*.AppImage e, com APPIMAGE_UPDATE_INFORMATION,
-#            desktop/dist/*.AppImage.zsync
+# O alvo precisa corresponder à arquitetura da máquina que executa o script.
+# Os alvos suportados são x86_64 e aarch64. Quando omitido, ele é detectado.
+#
+# Resultado: desktop/dist/Budget-<versão>-<arquitetura>.AppImage e, com
+#            APPIMAGE_UPDATE_INFORMATION, o respectivo arquivo .zsync.
 
 set -eu
 
 cd "$(dirname "$0")/../desktop"
+
+REQUESTED_ARCH="${1:-${BUDGET_APPIMAGE_ARCH:-}}"
+HOST_MACHINE="$(uname -m)"
+
+normalize_arch() {
+  case "$1" in
+    x86_64|amd64|x64) printf '%s\n' x86_64 ;;
+    aarch64|arm64) printf '%s\n' aarch64 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [ -z "$REQUESTED_ARCH" ]; then
+  REQUESTED_ARCH="$HOST_MACHINE"
+fi
+
+if ! APPIMAGE_ARCH="$(normalize_arch "$REQUESTED_ARCH")"; then
+  echo "ERRO: arquitetura não suportada: $REQUESTED_ARCH"
+  echo "Use x86_64 ou aarch64."
+  exit 1
+fi
+
+if ! HOST_ARCH="$(normalize_arch "$HOST_MACHINE")"; then
+  echo "ERRO: arquitetura da máquina não suportada: $HOST_MACHINE"
+  exit 1
+fi
+
+if [ "$APPIMAGE_ARCH" != "$HOST_ARCH" ]; then
+  echo "ERRO: o AppImage $APPIMAGE_ARCH precisa ser gerado em um runner $APPIMAGE_ARCH."
+  echo "Use o workflow do GitHub Actions ou execute o script em uma máquina nativa."
+  exit 1
+fi
+
+case "$APPIMAGE_ARCH" in
+  x86_64)
+    ELECTRON_ARCH=x64
+    RUNTIME_ARCH=x64
+    APPIMAGETOOL_ARCH=x86_64
+    APPIMAGETOOL_SHA256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+    ;;
+  aarch64)
+    ELECTRON_ARCH=arm64
+    RUNTIME_ARCH=arm64
+    APPIMAGETOOL_ARCH=aarch64
+    APPIMAGETOOL_SHA256=f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158
+    ;;
+esac
 
 HTML_SRC="../app/budget.html"
 if [ ! -f "$HTML_SRC" ]; then
@@ -30,16 +80,18 @@ fi
 cp -f "$HTML_SRC" ./index.html
 echo "==> HTML copiado para desktop/index.html ($(wc -c < index.html) bytes)"
 
-echo "==> Gerando AppImage com runtime estático"
-npm run dist
+APP_VERSION="$(node -p "require('./package.json').version")"
+APPIMAGE_ARTIFACT_NAME="Budget-\${version}-${APPIMAGE_ARCH}.\${ext}"
+APPIMAGE="$(pwd)/dist/Budget-${APP_VERSION}-${APPIMAGE_ARCH}.AppImage"
 
-set -- dist/*.AppImage
-if [ "$1" = "dist/*.AppImage" ]; then
-  echo "ERRO: electron-builder não gerou um AppImage"
+echo "==> Gerando AppImage $APPIMAGE_ARCH com runtime estático"
+npm run dist -- "--$ELECTRON_ARCH" "--config.artifactName=$APPIMAGE_ARTIFACT_NAME"
+
+if [ ! -f "$APPIMAGE" ]; then
+  echo "ERRO: electron-builder não gerou $APPIMAGE"
   exit 1
 fi
 
-APPIMAGE="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 chmod +x "$APPIMAGE"
 test -x "$APPIMAGE"
 
@@ -56,21 +108,21 @@ if ! command -v zsyncmake >/dev/null 2>&1; then
 fi
 
 CACHE_DIR="${ELECTRON_BUILDER_CACHE:-$HOME/.cache/electron-builder}"
-STATIC_RUNTIME="$(find "$CACHE_DIR/appimage@1.0.3" -type f -path '*/runtimes/runtime-x64' -print -quit)"
+STATIC_RUNTIME="$(find "$CACHE_DIR/appimage@1.0.3" -type f -path "*/runtimes/runtime-$RUNTIME_ARCH" -print -quit)"
 if [ -z "$STATIC_RUNTIME" ]; then
-  echo "ERRO: runtime estático do electron-builder não encontrado"
+  echo "ERRO: runtime estático $RUNTIME_ARCH do electron-builder não encontrado"
   exit 1
 fi
 
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT HUP INT TERM
 
-APPIMAGETOOL="$WORK_DIR/appimagetool-x86_64.AppImage"
+APPIMAGETOOL="$WORK_DIR/appimagetool-$APPIMAGETOOL_ARCH.AppImage"
 curl --fail --location --proto '=https' --tlsv1.2 --retry 3 \
   --output "$APPIMAGETOOL" \
-  "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage"
+  "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-$APPIMAGETOOL_ARCH.AppImage"
 printf '%s  %s\n' \
-  "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0" \
+  "$APPIMAGETOOL_SHA256" \
   "$APPIMAGETOOL" | sha256sum --check --status -
 chmod +x "$APPIMAGETOOL"
 

@@ -59,10 +59,19 @@ jobs:
       - run: npm audit --audit-level=high
 
   appimage:
-    name: AppImage atualizável
-    runs-on: ubuntu-latest
+    name: AppImage atualizável (${{ matrix.appimage_arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            appimage_arch: x86_64
+          - runner: ubuntu-24.04-arm
+            appimage_arch: aarch64
+    runs-on: ${{ matrix.runner }}
     env:
-      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync
+      BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
+      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|budget|latest|Budget-*-${{ matrix.appimage_arch }}.AppImage.zsync
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -95,10 +104,10 @@ jobs:
           node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" /tmp/budget-app.sbom.cdx.json /tmp/budget-desktop.sbom.cdx.json
       - name: Gerar e validar AppImage
         run: |
-          ./scripts/build-appimage.sh
+          ./scripts/build-appimage.sh "$BUDGET_APPIMAGE_ARCH"
           cmp app/budget.html desktop/index.html
-          appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"
-          test -n "$appimage"
+          appimage="desktop/dist/Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          test -f "$appimage"
           test -x "$appimage"
           test -s "$appimage.zsync"
           docker run --rm --cap-drop=ALL --security-opt no-new-privileges \
