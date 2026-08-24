@@ -2,12 +2,5 @@ node_modules/
 desktop/dist/
 desktop/dist-test/
 app/node_modules/
-mobile/node_modules/
-mobile/www/
-mobile/android/.gradle/
-mobile/android/app/build/
-*.p12
-*.jks
-*.keystore
 .tools/
 *.AppImage

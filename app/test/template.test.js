@@ -29,13 +29,6 @@ test('mantém a barra de título visível enquanto o conteúdo do app rola', () 
   assert.match(template, /\.content\{[\s\S]*?overflow:visible;/);
 });
 
-test('usa a mesma interface na casca Android sem ativar o service worker nativo', () => {
-  assert.match(template, /viewport-fit=cover/);
-  assert.match(template, /body\.is-android \.app-window/);
-  assert.match(template, /var isNativeAndroid = Boolean/);
-  assert.match(template, /!isNativeAndroid && 'serviceWorker' in navigator/);
-});
-
 test('mantém uma versão explícita para o diálogo Sobre', () => {
   assert.match(template, /Versão __APP_VERSION__/);
   assert.match(template, /Victor Ferreira Franco/);

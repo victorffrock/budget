@@ -27,13 +27,6 @@ chmod +x Budget-*-x86_64.AppImage
 
 O AppImage usa runtime estático e não requer FUSE.
 
-**Android (APK):**
-
-O Budget também possui uma casca Android baseada em Capacitor. As releases
-Android anexarão um arquivo `Budget-<versão>-universal.apk`, que pode ser
-instalado e acompanhado pelo Obtainium. O guia de assinatura, compilação e
-configuração do Obtainium está em [docs/ANDROID.md](docs/ANDROID.md).
-
 ### Verificar um download
 
 Cada release inclui o arquivo `SHA256SUMS.txt`. Após baixar os arquivos na
@@ -78,15 +71,6 @@ Esta mudança de identidade exige uma atualização manual única para instalaç
 anteriores: baixe o AppImage atual na página de releases e integre-o novamente.
 Após essa primeira instalação, as atualizações voltam a ser automáticas.
 
-### Atualizações pelo Obtainium (Android)
-
-Depois da primeira instalação, adicione o repositório
-`https://github.com/victorffrock/budget` ao Obtainium e use o filtro
-`^Budget-.*-universal\\.apk$`. Ele detecta novas releases e baixa o APK; por
-segurança, o Android ainda solicita sua confirmação para instalar a atualização.
-O APK mantém uma assinatura permanente e um `versionCode` crescente, requisitos
-para que o sistema aceite a atualização sem remover os dados do app.
-
 ### Versões estáveis e de teste
 
 O projeto mantém duas branches permanentes:
@@ -124,9 +108,6 @@ As regras que interpretam o texto do OCR possuem casos de teste sanitizados, inc
 ## Privacidade
 
 Nada é enviado para a internet. A leitura do PDF, o OCR e a soma acontecem só no seu computador.
-No Android, o aplicativo também não solicita permissão de internet, backup
-automático ou acesso amplo ao armazenamento: ele usa o seletor de arquivos do
-próprio sistema para abrir apenas os PDFs escolhidos.
 
 ## Compilando do código-fonte
 
@@ -172,21 +153,6 @@ Para uma release deste repositório, use:
 APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync' \
 ../scripts/build-appimage.sh
 ```
-
-### 3. Gerar o APK Android
-
-Instale Java 21 e o Android SDK. Em seguida:
-
-```sh
-cd mobile
-npm ci
-npm test
-npm run build:debug
-```
-
-O APK de teste usa um ID próprio e não substitui a instalação estável. O APK
-que será atualizado pelo Obtainium é gerado apenas em releases assinadas; veja
-[docs/ANDROID.md](docs/ANDROID.md) antes de criar a primeira chave.
 
 ## Licença
 

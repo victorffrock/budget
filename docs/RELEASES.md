@@ -1,8 +1,8 @@
 # Publicação de versões
 
 Este documento descreve como uma alteração passa pela validação até se tornar
-uma release estável do Budget. Ele existe para que o AppImage, o APK Android,
-o site e o código-fonte publiquem exatamente a mesma versão.
+uma release estável do Budget. Ele existe para que o AppImage, o
+site e o código-fonte publiquem exatamente a mesma versão.
 
 ## Branches
 
@@ -19,9 +19,8 @@ de trabalho.
 
 ## Antes de criar uma release
 
-1. Confirme que `app/package.json`, `desktop/package.json` e
-   `mobile/package.json` usam a mesma versão. O comando abaixo também verifica
-   essa regra:
+1. Confirme que `app/package.json` e `desktop/package.json` usam a mesma
+   versão. O comando abaixo também verifica essa regra:
 
    ```sh
    node scripts/verify-release-version.cjs
@@ -40,12 +39,6 @@ de trabalho.
    npm ci
    npm test
    npm run test:ui
-
-   cd ../mobile
-   npm ci
-   npm test
-   npm run sync
-   npm run verify
    ```
 
 3. Envie as alterações para `test` e espere a conclusão bem-sucedida de todos
@@ -68,13 +61,6 @@ workflow `Publicar AppImage` anexa automaticamente:
 - o arquivo `.zsync` usado pelo Gear Lever;
 - `SHA256SUMS.txt`;
 - `SBOM-app.cdx.json` e `SBOM-desktop.cdx.json`.
-
-Quando os secrets de assinatura Android estiverem configurados, a mesma release
-também anexa:
-
-- `Budget-<versão>-universal.apk`, rastreável pelo Obtainium;
-- `SHA256SUMS-Android.txt`;
-- `SBOM-mobile.cdx.json`.
 
 O mesmo workflow registra no GitHub uma atestação de procedência para o
 AppImage. A atestação não é um arquivo anexado à release: ela pode ser
@@ -111,11 +97,6 @@ git push origin v6.0.0
 O workflow de release só deve ser considerado concluído quando todos os
 arquivos acima estiverem anexados, a atestação existir e o AppImage puder ser
 verificado com `sha256sum`.
-
-Para releases que incluem Android, confirme também a atestação e o checksum do
-APK. A primeira configuração exige os quatro secrets documentados em
-[ANDROID.md](ANDROID.md); sem a chave persistente, não publique APKs de
-produção, pois versões futuras não conseguiriam atualizá-los.
 
 ## Correção de emergência
 

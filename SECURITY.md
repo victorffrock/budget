@@ -16,11 +16,10 @@ O Budget processa PDFs, OCR e valores localmente. Alterações que possam introd
 
 ## Integridade das releases
 
-As releases incluem `SHA256SUMS.txt` e, quando houver APK Android,
-`SHA256SUMS-Android.txt` para conferir os arquivos baixados. Quando o workflow
-da release registra uma atestação, o GitHub também guarda a procedência do
-AppImage e do APK. O repositório publica ainda SBOMs no formato CycloneDX para
-as dependências da aplicação, desktop e Android.
+As releases incluem `SHA256SUMS.txt` para conferir os arquivos baixados. Quando
+o workflow da release registra uma atestação, o GitHub também guarda a
+procedência do AppImage. O repositório publica ainda SBOMs no formato CycloneDX
+para as dependências da aplicação e do desktop.
 
 Antes de executar um arquivo, baixe os assets da mesma release e rode:
 
@@ -34,15 +33,6 @@ O segundo comando requer o GitHub CLI e é aplicável quando a release tem uma
 atestação. Ele confirma a origem do artefato; a soma SHA-256 confirma que o
 arquivo baixado não foi alterado.
 
-Para um APK Android, use o arquivo de checksum específico e substitua o nome
-do artefato no comando de atestação:
-
-```sh
-sha256sum -c --ignore-missing SHA256SUMS-Android.txt
-gh attestation verify Budget-*-universal.apk \
-  --repo victorffrock/budget
-```
-
 ## Controles automatizados
 
 | Controle | Quando roda | Objetivo |
@@ -52,8 +42,7 @@ gh attestation verify Budget-*-universal.apk \
 | Revisão de dependências | pull requests | destacar novas dependências vulneráveis antes da mesclagem |
 | CodeQL | push e pull requests | analisar padrões de código potencialmente inseguros |
 | Validação do AppImage e SBOM | CI e release | verificar atualização, distribuição e inventário de componentes |
-| Validação do APK Android | CI e release | verificar package ID, assinatura, versão e instalação de teste |
-| Atestação de procedência | publicação de release | vincular AppImage e APK ao workflow oficial |
+| Atestação de procedência | publicação de release | vincular o AppImage ao workflow oficial |
 
 As Actions são fixadas em commits imutáveis e atualizadas pelo Dependabot. O
 Electron é executado com isolamento de contexto, sandbox e integração Node
