@@ -43,6 +43,10 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - run: npm ci
+      # No Electron 43 o pacote pode baixar o runtime apenas na primeira
+      # execução do binário. Fazemos isso antes de ajustar o helper do sandbox.
+      - name: Baixar runtime do Electron
+        run: node node_modules/electron/install.js
       # O runner não preserva as permissões SUID do binário baixado pelo npm.
       # O Electron exige esse helper para executar seus testes com sandbox ativo.
       - name: Preparar sandbox do Electron
