@@ -89,8 +89,12 @@ Isso atualiza `app/somador-de-contas.html` e `index.html`.
 cd ../desktop
 npm ci
 npm test
+npm run test:ui
 ../scripts/build-appimage.sh
 ```
+
+`npm run test:ui` abre uma janela Electron invisível e valida os fluxos de
+interface, incluindo valores avulsos, saldo disponível, rolagem e limpeza.
 
 Para uma release deste repositório, use:
 

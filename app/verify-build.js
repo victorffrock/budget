@@ -23,9 +23,15 @@ const pwaHead = [
 assert.ok(bundled.length > 6_000_000, 'o HTML offline deve conter pdf.js e o OCR incorporados');
 assert.ok(!bundled.includes('__APP_VERSION__'), 'a versão deve ser incorporada no HTML gerado');
 assert.ok(!bundled.includes('__TESSERACT_JS__'), 'o motor OCR deve ser incorporado no HTML gerado');
+assert.ok(!bundled.includes('__APP_STATE_JS__'), 'o módulo de estado deve ser incorporado no HTML gerado');
+assert.ok(!bundled.includes('__UI_LAYOUT_JS__'), 'o módulo de layout deve ser incorporado no HTML gerado');
+assert.ok(!bundled.includes('__DIALOGS_JS__'), 'o módulo de diálogos deve ser incorporado no HTML gerado');
 assert.ok(bundled.includes('SOMADOR_OCR_LANG_URL'), 'o modelo de português deve ser disponibilizado localmente ao OCR');
 assert.ok(bundled.includes('var TesseractCore='), 'o núcleo OCR deve ser carregado pelo trabalhador local');
 assert.ok(bundled.includes("cacheMethod: 'none'"), 'o OCR não deve gravar documentos no cache do navegador');
+assert.ok(bundled.includes('SomadorState'), 'o módulo de estado deve estar disponível no aplicativo offline');
+assert.ok(bundled.includes('SomadorUiLayout'), 'o módulo de layout deve estar disponível no aplicativo offline');
+assert.ok(bundled.includes('SomadorDialogs'), 'o módulo de diálogos deve estar disponível no aplicativo offline');
 assert.ok(bundled.includes('Versão ' + appPackage.version), 'o diálogo Sobre deve exibir a versão do aplicativo');
 assert.equal(appPackage.version, desktopPackage.version, 'as versões web e desktop devem ser iguais');
 assert.ok(site.includes(pwaHead), 'a versão web deve conter os metadados da PWA');

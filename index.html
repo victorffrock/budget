@@ -828,7 +828,7 @@
     <div class="dialog-body about-content">
       <img class="about-icon" id="aboutIcon" alt="Ícone do Somador de Contas" src="">
       <p class="about-name">Somador de Contas</p>
-      <p class="about-version">Versão 5.0.0-test.1</p>
+      <p class="about-version">Versão 5.0.0-test.2</p>
       <p class="about-description">Uma ferramenta simples para somar valores de boletos e faturas em PDF, sem enviar seus documentos para a internet.</p>
       <p class="about-author">Desenvolvido por Victor Ferreira Franco</p>
       <div class="about-links">
@@ -842,7 +842,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
-/* ========================= application core ========================= */
+/* ========================= application modules ========================= */
 (function (root, factory) {
   var api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -981,6 +981,229 @@
   });
 });
 
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.SomadorState = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // Estado e regras de coleção ficam fora da camada de interface para que
+  // possam ser testados sem depender do DOM, do Electron ou do PDF.js.
+  function createAppState() {
+    return { items: [], availableAmount: null };
+  }
+
+  function createManualItem(id, description, amount) {
+    return {
+      id: id,
+      kind: 'manual',
+      filename: description,
+      amount: amount,
+      due: null,
+      status: 'ok',
+      confidence: 'manual',
+      cancelled: false
+    };
+  }
+
+  function createPendingPdfItem(id, filename) {
+    return {
+      id: id,
+      filename: filename,
+      amount: null,
+      due: null,
+      status: 'processing',
+      confidence: 'err',
+      cancelled: false,
+      ocrUsed: false,
+      ocrTried: false,
+      ocrSkipped: false,
+      ocrError: false,
+      ocrPage: 0,
+      ocrPages: 0,
+      ocrProgress: 0
+    };
+  }
+
+  function appendItems(state, items) {
+    state.items = state.items.concat(items);
+    return state.items;
+  }
+
+  function findItem(state, id) {
+    return state.items.find(function (item) { return item.id === id; });
+  }
+
+  function containsItem(state, item) {
+    return state.items.indexOf(item) !== -1;
+  }
+
+  function removeItem(state, item) {
+    state.items = state.items.filter(function (candidate) { return candidate !== item; });
+    return state.items;
+  }
+
+  function clearItems(state) {
+    var previousItems = state.items;
+    state.items = [];
+    return previousItems;
+  }
+
+  function setAvailableAmount(state, amount) {
+    state.availableAmount = amount;
+  }
+
+  function calculateTotal(items) {
+    return items.reduce(function (sum, item) {
+      return sum + (typeof item.amount === 'number' ? item.amount : 0);
+    }, 0);
+  }
+
+  function getItemCounts(items) {
+    var documentCount = items.filter(function (item) { return item.kind !== 'manual'; }).length;
+    return {
+      documentCount: documentCount,
+      manualCount: items.length - documentCount
+    };
+  }
+
+  return Object.freeze({
+    appendItems: appendItems,
+    calculateTotal: calculateTotal,
+    clearItems: clearItems,
+    containsItem: containsItem,
+    createAppState: createAppState,
+    createManualItem: createManualItem,
+    createPendingPdfItem: createPendingPdfItem,
+    findItem: findItem,
+    getItemCounts: getItemCounts,
+    removeItem: removeItem,
+    setAvailableAmount: setAvailableAmount
+  });
+});
+
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.SomadorUiLayout = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  function setHidden(element, hidden) {
+    element.hidden = hidden;
+  }
+
+  // Há apenas um botão de valor avulso. Em vez de duplicá-lo, ele é movido
+  // entre os dois contêineres que representam os estados vazio e preenchido.
+  function syncManualActionPosition(elements, hasItems) {
+    var target = hasItems ? elements.manualActionHost : elements.statusActions;
+    if (elements.addManualBtn.parentElement !== target) {
+      target.appendChild(elements.addManualBtn);
+    }
+    setHidden(elements.manualActionHost, !hasItems);
+  }
+
+  // Mantém os elementos dependentes da quantidade de itens sincronizados.
+  // A camada de renderização delega esta decisão para evitar estados visuais
+  // divergentes, como lista visível com a tela vazia ainda ocupando espaço.
+  function syncItemLayout(elements, itemCount) {
+    var hasItems = itemCount > 0;
+    setHidden(elements.statusPage, hasItems);
+    setHidden(elements.boxedList, !hasItems);
+    setHidden(elements.summaryCard, !hasItems);
+    elements.menuClear.disabled = !hasItems;
+    syncManualActionPosition(elements, hasItems);
+  }
+
+  return Object.freeze({
+    setHidden: setHidden,
+    syncItemLayout: syncItemLayout,
+    syncManualActionPosition: syncManualActionPosition
+  });
+});
+
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.SomadorDialogs = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  function createDialogController(options) {
+    var activeDialog = null;
+    var lastFocusedElement = null;
+    var documentRef = options.document;
+
+    function getMenuItems() {
+      return Array.prototype.filter.call(options.appMenu.querySelectorAll('.menu-item'), function (item) {
+        return !item.disabled;
+      });
+    }
+
+    function setMenuOpen(open, restoreFocus) {
+      var wasOpen = !options.appMenu.hidden;
+      options.appMenu.hidden = !open;
+      options.appMenuButton.setAttribute('aria-expanded', String(open));
+      if (open) {
+        var firstItem = getMenuItems()[0];
+        if (firstItem) firstItem.focus();
+      } else if (restoreFocus && wasOpen) {
+        options.appMenuButton.focus();
+      }
+    }
+
+    function open(dialog) {
+      setMenuOpen(false);
+      lastFocusedElement = documentRef.activeElement;
+      activeDialog = dialog;
+      dialog.hidden = false;
+      documentRef.body.classList.add('modal-open');
+      var initialFocus = dialog.querySelector('[data-dialog-initial-focus]') || dialog.querySelector('[data-dialog-close]');
+      if (initialFocus) initialFocus.focus();
+    }
+
+    function close(dialog) {
+      if (!dialog || dialog.hidden) return;
+      dialog.hidden = true;
+      activeDialog = null;
+      documentRef.body.classList.remove('modal-open');
+      if (typeof options.onClose === 'function') options.onClose(dialog);
+      if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+    }
+
+    function keepFocusInsideActiveDialog(event) {
+      if (!activeDialog) return;
+      var focusable = Array.prototype.filter.call(
+        activeDialog.querySelectorAll('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'),
+        function (element) { return !element.hidden && element.getClientRects().length > 0; }
+      );
+      if (!focusable.length) return;
+
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (event.shiftKey && documentRef.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && documentRef.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    return Object.freeze({
+      close: close,
+      getActiveDialog: function () { return activeDialog; },
+      getMenuItems: getMenuItems,
+      keepFocusInsideActiveDialog: keepFocusInsideActiveDialog,
+      open: open,
+      setMenuOpen: setMenuOpen
+    });
+  }
+
+  return Object.freeze({ createDialogController: createDialogController });
+});
+
 </script>
 <script>
 /* ========================= tesseract.js (embedded, offline) ========================= */
@@ -1017,7 +1240,10 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     if (btnClose) btnClose.addEventListener('click', function(){ window.somadorDesktop.close(); });
   }
 
-  var state = { items: [], availableAmount: null };
+  var State = window.SomadorState;
+  var UiLayout = window.SomadorUiLayout;
+  var Dialogs = window.SomadorDialogs;
+  var state = State.createAppState();
   var nextId = 1;
   var MAX_OCR_PAGES = 4;
   var MAX_OCR_FILE_BYTES = 25 * 1024 * 1024;
@@ -1064,9 +1290,18 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   var manualDialog = document.getElementById('manualDialog');
   var aboutDialog = document.getElementById('aboutDialog');
   var toast = document.getElementById('toast');
-  var activeDialog = null;
-  var lastFocusedElement = null;
   var toastTimer = null;
+
+  // Menus e diálogos compartilham as mesmas regras de foco e restauração.
+  // O controlador mantém essa lógica de acessibilidade fora do fluxo do app.
+  var dialogController = Dialogs.createDialogController({
+    document: document,
+    appMenu: appMenu,
+    appMenuButton: appMenuButton,
+    onClose: function(dialog){
+      if(dialog === manualValueDialog) resetManualValueForm();
+    }
+  });
 
   function showToast(message){
     toast.textContent = message;
@@ -1076,58 +1311,23 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   }
 
   function getMenuItems(){
-    return Array.prototype.filter.call(appMenu.querySelectorAll('.menu-item'), function(item){
-      return !item.disabled;
-    });
+    return dialogController.getMenuItems();
   }
 
   function setMenuOpen(open, restoreFocus){
-    var wasOpen = !appMenu.hidden;
-    appMenu.hidden = !open;
-    appMenuButton.setAttribute('aria-expanded', String(open));
-    if(open){
-      var firstItem = getMenuItems()[0];
-      if(firstItem) firstItem.focus();
-    } else if(restoreFocus && wasOpen){
-      appMenuButton.focus();
-    }
+    dialogController.setMenuOpen(open, restoreFocus);
   }
 
   function keepFocusInsideDialog(event){
-    var focusable = Array.prototype.filter.call(
-      activeDialog.querySelectorAll('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'),
-      function(element){ return !element.hidden && element.getClientRects().length > 0; }
-    );
-    if(!focusable.length) return;
-
-    var first = focusable[0];
-    var last = focusable[focusable.length - 1];
-    if(event.shiftKey && document.activeElement === first){
-      event.preventDefault();
-      last.focus();
-    } else if(!event.shiftKey && document.activeElement === last){
-      event.preventDefault();
-      first.focus();
-    }
+    dialogController.keepFocusInsideActiveDialog(event);
   }
 
   function openDialog(dialog){
-    setMenuOpen(false);
-    lastFocusedElement = document.activeElement;
-    activeDialog = dialog;
-    dialog.hidden = false;
-    document.body.classList.add('modal-open');
-    var initialFocus = dialog.querySelector('[data-dialog-initial-focus]') || dialog.querySelector('[data-dialog-close]');
-    if(initialFocus) initialFocus.focus();
+    dialogController.open(dialog);
   }
 
   function closeDialog(dialog){
-    if(!dialog || dialog.hidden) return;
-    dialog.hidden = true;
-    activeDialog = null;
-    document.body.classList.remove('modal-open');
-    if(dialog === manualValueDialog) resetManualValueForm();
-    if(lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+    dialogController.close(dialog);
   }
 
   var ICONS = {
@@ -1155,13 +1355,11 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   }
 
   function isItemActive(item){
-    return !item.cancelled && state.items.indexOf(item) !== -1;
+    return !item.cancelled && State.containsItem(state, item);
   }
 
   function getTotal(){
-    return state.items.reduce(function(sum, it){
-      return sum + (typeof it.amount === 'number' ? it.amount : 0);
-    }, 0);
+    return State.calculateTotal(state.items);
   }
 
   function renderBalance(total, preserveInput){
@@ -1198,7 +1396,7 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
 
   function updateAvailableAmount(){
     var raw = availableAmountInput.value.trim();
-    state.availableAmount = raw ? parseBRLNumber(raw) : null;
+    State.setAvailableAmount(state, raw ? parseBRLNumber(raw) : null);
     renderBalance(getTotal(), true);
   }
 
@@ -1351,30 +1549,21 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     });
   }
 
-  // O mesmo botão de valor avulso muda de lugar conforme o estado da tela.
-  // Isso mantém a ação sempre disponível sem criar controles duplicados.
-  function syncManualActionPosition(hasItems){
-    var target = hasItems ? manualActionHost : statusActions;
-    if(addManualBtn.parentElement !== target) target.appendChild(addManualBtn);
-    manualActionHost.hidden = !hasItems;
-  }
-
-  // Centraliza as regras de visibilidade para evitar que estados diferentes
-  // da interface (lista, resumo e ações) fiquem fora de sincronia.
-  function renderLayout(itemCount){
-    var hasItems = itemCount > 0;
-    statusPage.hidden = hasItems;
-    boxedList.hidden = !hasItems;
-    summaryCard.hidden = !hasItems;
-    menuClear.disabled = !hasItems;
-    syncManualActionPosition(hasItems);
-  }
+  var itemLayoutElements = {
+    statusPage: statusPage,
+    statusActions: statusActions,
+    boxedList: boxedList,
+    summaryCard: summaryCard,
+    menuClear: menuClear,
+    addManualBtn: addManualBtn,
+    manualActionHost: manualActionHost
+  };
 
   function render(){
     rowsEl.innerHTML = '';
     var n = state.items.length;
 
-    renderLayout(n);
+    UiLayout.syncItemLayout(itemLayoutElements, n);
 
     state.items.forEach(function(item){
       var row = document.createElement('div');
@@ -1456,8 +1645,9 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     });
 
     var total = getTotal();
-    var documentCount = state.items.filter(function(it){ return it.kind !== 'manual'; }).length;
-    var manualCount = n - documentCount;
+    var counts = State.getItemCounts(state.items);
+    var documentCount = counts.documentCount;
+    var manualCount = counts.manualCount;
     var labels = [];
     if(documentCount) labels.push(documentCount === 1 ? '1 conta' : documentCount + ' contas');
     if(manualCount) labels.push(manualCount === 1 ? '1 valor avulso' : manualCount + ' valores avulsos');
@@ -1529,35 +1719,26 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     }
 
     var description = manualValueDescription.value.trim() || 'Valor avulso';
-    state.items.push({
-      id: nextId++,
-      kind: 'manual',
-      filename: description,
-      amount: amount,
-      due: null,
-      status: 'ok',
-      confidence: 'manual',
-      cancelled: false
-    });
+    State.appendItems(state, [State.createManualItem(nextId++, description, amount)]);
     render();
     closeDialog(manualValueDialog);
     showToast('Valor avulso adicionado ao total.');
   }
 
   function removeItem(id){
-    var item = state.items.find(function(it){ return it.id === id; });
+    var item = State.findItem(state, id);
     if(!item) return;
     item.cancelled = true;
     if(ocrCurrentItem === item) disposeOcrWorker();
-    state.items = state.items.filter(function(it){ return it !== item; });
+    State.removeItem(state, item);
     render();
   }
 
   function clearItems(){
     if(!state.items.length) return;
-    state.items.forEach(function(item){ item.cancelled = true; });
+    var previousItems = State.clearItems(state);
+    previousItems.forEach(function(item){ item.cancelled = true; });
     if(ocrCurrentItem) disposeOcrWorker();
-    state.items = [];
     render();
     chooseBtn.focus();
   }
@@ -1569,13 +1750,9 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     if(!files.length) return;
 
     var pending = files.map(function(f){
-      return {
-        id: nextId++, filename: f.name, amount:null, due:null, status:'processing', confidence:'err',
-        cancelled:false, ocrUsed:false, ocrTried:false, ocrSkipped:false, ocrError:false,
-        ocrPage:0, ocrPages:0, ocrProgress:0
-      };
+      return State.createPendingPdfItem(nextId++, f.name);
     });
-    state.items = state.items.concat(pending);
+    State.appendItems(state, pending);
     render();
 
     for(var i=0;i<files.length;i++){
@@ -1697,6 +1874,7 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
     if(!menuWrap.contains(event.target)) setMenuOpen(false);
   });
   document.addEventListener('keydown', function(event){
+    var activeDialog = dialogController.getActiveDialog();
     if(activeDialog){
       if(event.key === 'Tab') keepFocusInsideDialog(event);
       if(event.key === 'Escape') closeDialog(activeDialog);
@@ -1739,10 +1917,17 @@ window.__TESSERACT_WORKER_SRC__ = "/* Modelo OCR local incorporado pelo Somador 
   }
 
   render();
+  // Sinal explícito para a suíte de interface aguardar a inicialização real
+  // do módulo antes de simular interações do usuário.
+  document.body.dataset.somadorReady = 'true';
+  window.dispatchEvent(new Event('somador-ready'));
 })();
 </script>
 <script>
-  if ('serviceWorker' in navigator) {
+  // A suíte Electron usa ?e2e=1 para não persistir dados de service worker
+  // durante os testes de interface. No aplicativo normal, a PWA continua
+  // registrada exatamente como antes.
+  if ('serviceWorker' in navigator && !new URLSearchParams(window.location.search).has('e2e')) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('./sw.js').catch(function () {});
     });

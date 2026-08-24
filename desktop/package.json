@@ -1,6 +1,6 @@
 {
   "name": "somador-de-contas",
-  "version": "5.0.0-test.1",
+  "version": "5.0.0-test.2",
   "description": "Soma o valor de boletos em PDF, tudo processado localmente no seu computador. Visual baseado no GNOME HIG.",
   "author": "Victor Ferreira Franco",
   "homepage": "https://github.com/victorffrock/somador-de-contas",
@@ -15,6 +15,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
+    "test:ui": "electron e2e/ui-flow.cjs",
     "dist": "electron-builder --linux AppImage --publish never"
   },
   "devDependencies": {

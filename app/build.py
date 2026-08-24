@@ -23,6 +23,9 @@ TESSERACT_PORTUGUESE_DATA = (
 )
 TEMPLATE = HERE / "src" / "template.html"
 CORE = HERE / "src" / "core.js"
+STATE = HERE / "src" / "state.js"
+UI_LAYOUT = HERE / "src" / "ui-layout.js"
+DIALOGS = HERE / "src" / "dialogs.js"
 ICON = HERE.parent / "desktop" / "assets" / "icon.png"
 OUTPUT = HERE / "somador-de-contas.html"
 PACKAGE = HERE / "package.json"
@@ -81,6 +84,9 @@ def main():
     tesseract_core = TESSERACT_CORE.read_text(encoding="utf-8")
     portuguese_data_b64 = base64.b64encode(TESSERACT_PORTUGUESE_DATA.read_bytes()).decode("ascii")
     core = CORE.read_text(encoding="utf-8")
+    state = STATE.read_text(encoding="utf-8")
+    ui_layout = UI_LAYOUT.read_text(encoding="utf-8")
+    dialogs = DIALOGS.read_text(encoding="utf-8")
 
     pdf_lib_safe = safe_for_inline_script(pdf_lib)
     pdf_worker_safe = safe_for_inline_script(pdf_worker)
@@ -89,6 +95,9 @@ def main():
         safe_for_inline_script(make_ocr_worker_source(tesseract_worker, tesseract_core, portuguese_data_b64))
     )
     core_safe = safe_for_inline_script(core)
+    state_safe = safe_for_inline_script(state)
+    ui_layout_safe = safe_for_inline_script(ui_layout)
+    dialogs_safe = safe_for_inline_script(dialogs)
     pdf_lib_json = json.dumps(pdf_lib_safe)
     pdf_worker_json = json.dumps(pdf_worker_safe)
     version = json.loads(PACKAGE.read_text(encoding="utf-8"))["version"]
@@ -98,6 +107,9 @@ def main():
 
     html = TEMPLATE.read_text(encoding="utf-8")
     html = html.replace("__CORE_JS__", core_safe)
+    html = html.replace("__APP_STATE_JS__", state_safe)
+    html = html.replace("__UI_LAYOUT_JS__", ui_layout_safe)
+    html = html.replace("__DIALOGS_JS__", dialogs_safe)
     html = html.replace("__TESSERACT_JS__", tesseract_lib_safe)
     html = html.replace("__PDFJS_LIB_JSON__", pdf_lib_json)
     html = html.replace("__PDFJS_WORKER_JSON__", pdf_worker_json)

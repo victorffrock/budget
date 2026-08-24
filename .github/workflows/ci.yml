@@ -42,8 +42,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      - run: npm ci --ignore-scripts
+      - run: npm ci
       - run: npm test
+      - run: xvfb-run --auto-servernum npm run test:ui
       - run: npm audit --audit-level=high
 
   appimage:

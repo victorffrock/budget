@@ -51,11 +51,11 @@ test('permite somar valores avulsos com uma descrição opcional', () => {
   assert.match(template, /Adicionar valor avulso/);
   assert.match(template, /id="manualValueDescription"/);
   assert.match(template, /id="manualValueInput"/);
-  assert.match(template, /kind: 'manual'/);
+  assert.match(template, /State\.createManualItem/);
   assert.match(template, /Valor avulso adicionado ao total/);
   assert.match(template, /action === 'add-manual'/);
-  assert.match(template, /function syncManualActionPosition/);
-  assert.match(template, /target\.appendChild\(addManualBtn\)/);
+  assert.match(template, /UiLayout\.syncItemLayout/);
+  assert.match(template, /__UI_LAYOUT_JS__/);
 });
 
 test('calcula e comunica o saldo depois de pagar as contas', () => {
