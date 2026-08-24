@@ -1,0 +1,27 @@
+{
+  "name": "budget-mobile",
+  "private": true,
+  "version": "6.1.0-test.1",
+  "description": "Empacotamento Android do Budget com Capacitor.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "sync": "npm run prepare:web && cap sync android",
+    "test": "node --test",
+    "verify": "node scripts/verify-mobile.mjs",
+    "build:debug": "npm run sync && node scripts/gradle-build.mjs debug",
+    "build:release": "npm run sync && node scripts/gradle-build.mjs release"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "appId": "br.com.victorferreirafranco.budget",
+  "appName": "Budget",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}

@@ -12,6 +12,73 @@ permissions:
   id-token: write
 
 jobs:
+  android:
+    name: Gerar APK Android
+    runs-on: ubuntu-latest
+    env:
+      BUDGET_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.BUDGET_ANDROID_KEYSTORE_PASSWORD }}
+      BUDGET_ANDROID_KEY_ALIAS: ${{ secrets.BUDGET_ANDROID_KEY_ALIAS }}
+      BUDGET_ANDROID_KEY_PASSWORD: ${{ secrets.BUDGET_ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            mobile/package-lock.json
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Validar tag e versões
+        run: node scripts/verify-release-version.cjs "${{ github.event.release.tag_name }}"
+      - name: Resolver versão Android
+        id: android_version
+        run: node mobile/scripts/version.mjs "${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+      - name: Instalar dependências da aplicação e do Android
+        run: |
+          npm ci --prefix app --ignore-scripts
+          npm ci --prefix mobile
+      - name: Preparar chave de assinatura
+        env:
+          BUDGET_ANDROID_KEYSTORE_BASE64: ${{ secrets.BUDGET_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$BUDGET_ANDROID_KEYSTORE_BASE64"
+          printf '%s' "$BUDGET_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/budget-release.p12"
+          test -s "$RUNNER_TEMP/budget-release.p12"
+          echo "BUDGET_ANDROID_KEYSTORE=$RUNNER_TEMP/budget-release.p12" >> "$GITHUB_ENV"
+      - name: Gerar APK assinado
+        run: npm --prefix mobile run build:release
+      - name: Verificar APK e gerar metadados
+        env:
+          VERSION_NAME: ${{ steps.android_version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.android_version.outputs.version_code }}
+        run: |
+          source_apk='mobile/android/app/build/outputs/apk/release/app-release.apk'
+          target_dir='mobile/dist'
+          target_apk="$target_dir/Budget-${VERSION_NAME}-universal.apk"
+          mkdir -p "$target_dir"
+          cp "$source_apk" "$target_apk"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print -quit)"
+          aapt="$(find "$ANDROID_HOME/build-tools" -type f -name aapt -print -quit)"
+          test -n "$apksigner"
+          test -n "$aapt"
+          "$apksigner" verify --verbose --print-certs "$target_apk"
+          "$aapt" dump badging "$target_apk" | grep "package: name='br.com.victorferreirafranco.budget' versionCode='${VERSION_CODE}' versionName='${VERSION_NAME}'"
+          npm --prefix mobile sbom --sbom-format=cyclonedx --package-lock-only > "$target_dir/SBOM-mobile.cdx.json"
+          node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'));" "$target_dir/SBOM-mobile.cdx.json"
+          sha256sum "$target_apk" "$target_dir/SBOM-mobile.cdx.json" > "$target_dir/SHA256SUMS-Android.txt"
+      - name: Atestar a procedência do APK
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: mobile/dist/*.apk
+      - name: Anexar APK e metadados de atualização
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" mobile/dist/* --clobber
+
   appimage:
     name: Gerar AppImage
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 {
   "name": "budget",
-  "version": "6.0.0",
+  "version": "6.1.0-test.1",
   "description": "Soma o valor de boletos em PDF, tudo processado localmente no seu computador. Visual baseado no GNOME HIG.",
   "author": "Victor Ferreira Franco",
   "homepage": "https://github.com/victorffrock/budget",
