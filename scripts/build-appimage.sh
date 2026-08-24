@@ -15,7 +15,7 @@ set -eu
 
 cd "$(dirname "$0")/../desktop"
 
-HTML_SRC="../app/somador-de-contas.html"
+HTML_SRC="../app/budget.html"
 if [ ! -f "$HTML_SRC" ]; then
   echo "ERRO: não encontrei $HTML_SRC"
   echo "Rode antes: cd app && npm install && npm run build"

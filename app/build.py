@@ -1,5 +1,5 @@
 """
-Gera o arquivo único somador-de-contas.html, embutindo o pdf.js, o worker
+Gera o arquivo único budget.html, embutindo o pdf.js, o worker
 do pdf.js e o ícone do app — tudo inline, para que o resultado funcione
 100% offline (basta abrir o .html, sem servidor e sem internet).
 
@@ -7,7 +7,7 @@ Uso:
     npm install                 # baixa o pdfjs-dist (só usado no build)
     python3 build.py
 
-Gera: ./somador-de-contas.html
+Gera: ./budget.html
 """
 import base64
 import json
@@ -27,7 +27,7 @@ STATE = HERE / "src" / "state.js"
 UI_LAYOUT = HERE / "src" / "ui-layout.js"
 DIALOGS = HERE / "src" / "dialogs.js"
 ICON = HERE.parent / "desktop" / "assets" / "icon.png"
-OUTPUT = HERE / "somador-de-contas.html"
+OUTPUT = HERE / "budget.html"
 PACKAGE = HERE / "package.json"
 
 
@@ -47,26 +47,26 @@ def make_ocr_worker_source(worker_js: str, tesseract_core: str, portuguese_data_
     as demais chamadas normalmente. Dessa forma, o pacote gerado continua
     totalmente offline e o modelo não precisa ser baixado no primeiro uso.
     """
-    prelude = f"""/* Modelo OCR local incorporado pelo Somador de Contas. */
-const SOMADOR_OCR_LANG_URL = 'https://somador.local/tessdata/por.traineddata.gz';
-const SOMADOR_OCR_LANG_B64 = '{portuguese_data_b64}';
-let somadorOcrLanguageBytes;
-const somadorOriginalFetch = self.fetch.bind(self);
+    prelude = f"""/* Modelo OCR local incorporado pelo Budget. */
+const BUDGET_OCR_LANG_URL = 'https://budget.local/tessdata/por.traineddata.gz';
+const BUDGET_OCR_LANG_B64 = '{portuguese_data_b64}';
+let budgetOcrLanguageBytes;
+const budgetOriginalFetch = self.fetch.bind(self);
 self.fetch = function (input, init) {{
   const url = typeof input === 'string' ? input : input && input.url;
-  if (url === SOMADOR_OCR_LANG_URL) {{
-    if (!somadorOcrLanguageBytes) {{
-      const binary = atob(SOMADOR_OCR_LANG_B64);
+  if (url === BUDGET_OCR_LANG_URL) {{
+    if (!budgetOcrLanguageBytes) {{
+      const binary = atob(BUDGET_OCR_LANG_B64);
       const bytes = new Uint8Array(binary.length);
       for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-      somadorOcrLanguageBytes = bytes;
+      budgetOcrLanguageBytes = bytes;
     }}
-    return Promise.resolve(new Response(somadorOcrLanguageBytes, {{
+    return Promise.resolve(new Response(budgetOcrLanguageBytes, {{
       status: 200,
       headers: {{ 'Content-Type': 'application/gzip' }}
     }}));
   }}
-  return somadorOriginalFetch(input, init);
+  return budgetOriginalFetch(input, init);
 }};
 """
     # O núcleo precisa estar no mesmo Worker. Uma URL blob não termina em
@@ -136,7 +136,7 @@ def main():
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Somador de Contas">
+<meta name="apple-mobile-web-app-title" content="Budget">
 """
     if 'rel="manifest"' not in html:
         html = html.replace("</title>", "</title>\n" + pwa_head, 1)

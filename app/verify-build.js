@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const appDir = __dirname;
-const bundled = fs.readFileSync(path.join(appDir, 'somador-de-contas.html'), 'utf8');
+const bundled = fs.readFileSync(path.join(appDir, 'budget.html'), 'utf8');
 const site = fs.readFileSync(path.join(appDir, '..', 'index.html'), 'utf8');
 const desktop = fs.readFileSync(path.join(appDir, '..', 'desktop', 'index.html'), 'utf8');
 const appPackage = require(path.join(appDir, 'package.json'));
@@ -16,7 +16,7 @@ const pwaHead = [
   '<meta name="mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
-  '<meta name="apple-mobile-web-app-title" content="Somador de Contas">',
+  '<meta name="apple-mobile-web-app-title" content="Budget">',
   ''
 ].join('\n');
 
@@ -26,12 +26,12 @@ assert.ok(!bundled.includes('__TESSERACT_JS__'), 'o motor OCR deve ser incorpora
 assert.ok(!bundled.includes('__APP_STATE_JS__'), 'o módulo de estado deve ser incorporado no HTML gerado');
 assert.ok(!bundled.includes('__UI_LAYOUT_JS__'), 'o módulo de layout deve ser incorporado no HTML gerado');
 assert.ok(!bundled.includes('__DIALOGS_JS__'), 'o módulo de diálogos deve ser incorporado no HTML gerado');
-assert.ok(bundled.includes('SOMADOR_OCR_LANG_URL'), 'o modelo de português deve ser disponibilizado localmente ao OCR');
+assert.ok(bundled.includes('BUDGET_OCR_LANG_URL'), 'o modelo de português deve ser disponibilizado localmente ao OCR');
 assert.ok(bundled.includes('var TesseractCore='), 'o núcleo OCR deve ser carregado pelo trabalhador local');
 assert.ok(bundled.includes("cacheMethod: 'none'"), 'o OCR não deve gravar documentos no cache do navegador');
-assert.ok(bundled.includes('SomadorState'), 'o módulo de estado deve estar disponível no aplicativo offline');
-assert.ok(bundled.includes('SomadorUiLayout'), 'o módulo de layout deve estar disponível no aplicativo offline');
-assert.ok(bundled.includes('SomadorDialogs'), 'o módulo de diálogos deve estar disponível no aplicativo offline');
+assert.ok(bundled.includes('BudgetState'), 'o módulo de estado deve estar disponível no aplicativo offline');
+assert.ok(bundled.includes('BudgetUiLayout'), 'o módulo de layout deve estar disponível no aplicativo offline');
+assert.ok(bundled.includes('BudgetDialogs'), 'o módulo de diálogos deve estar disponível no aplicativo offline');
 assert.ok(bundled.includes('Versão ' + appPackage.version), 'o diálogo Sobre deve exibir a versão do aplicativo');
 assert.equal(appPackage.version, desktopPackage.version, 'as versões web e desktop devem ser iguais');
 assert.ok(site.includes(pwaHead), 'a versão web deve conter os metadados da PWA');

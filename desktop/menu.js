@@ -26,7 +26,7 @@ function createApplicationMenuTemplate(options) {
       label: 'Ajuda',
       submenu: [
         action('Manual', 'F1', 'manual'),
-        action('Sobre o Somador de Contas', undefined, 'about')
+        action('Sobre o Budget', undefined, 'about')
       ]
     }
   ];

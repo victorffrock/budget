@@ -4,7 +4,7 @@ const { createApplicationMenuTemplate } = require('./menu');
 
 function sendAppAction(action) {
   const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
-  if (win) win.webContents.send('somador:action', action);
+  if (win) win.webContents.send('budget:action', action);
 }
 
 function installApplicationMenu() {
@@ -30,7 +30,7 @@ function createWindow() {
     frame: false,
     titleBarStyle: 'hidden',
     icon: path.join(__dirname, 'assets', 'icon.png'),
-    title: 'Somador de Contas',
+    title: 'Budget',
     show: false,
     webPreferences: {
       contextIsolation: true,

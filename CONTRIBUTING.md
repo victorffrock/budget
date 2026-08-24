@@ -1,6 +1,6 @@
 # Como contribuir
 
-Obrigado por querer melhorar o Somador de Contas.
+Obrigado por querer melhorar o Budget.
 
 ## Princípios do projeto
 
@@ -15,7 +15,7 @@ Obrigado por querer melhorar o Somador de Contas.
    para `test`. As únicas branches permanentes são `test` e `main`.
 2. Na pasta `app`, execute `npm ci`, `npm test`, `npm run build` e `npm run verify`.
 3. Na pasta `desktop`, execute `npm ci`, `npm test` e `npm run test:ui`.
-4. Inclua os arquivos gerados `app/somador-de-contas.html` e `index.html` quando mudar a interface ou a lógica da aplicação.
+4. Inclua os arquivos gerados `app/budget.html` e `index.html` quando mudar a interface ou a lógica da aplicação.
 5. Na raiz, execute `node scripts/verify-release-version.cjs` quando a mudança
    puder afetar a versão distribuída.
 6. Explique no pull request como a alteração foi testada.

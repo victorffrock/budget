@@ -33,9 +33,9 @@ function addManualValue(window, description, amount) {
 async function waitForApp(window) {
   await execute(window, `
     new Promise((resolve, reject) => {
-      if (document.body.dataset.somadorReady === 'true') return resolve();
+      if (document.body.dataset.budgetReady === 'true') return resolve();
       const timeout = window.setTimeout(() => reject(new Error('O aplicativo não concluiu a inicialização.')), 10000);
-      window.addEventListener('somador-ready', () => {
+      window.addEventListener('budget-ready', () => {
         window.clearTimeout(timeout);
         resolve();
       }, { once: true });

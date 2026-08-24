@@ -16,7 +16,7 @@ jobs:
     name: Gerar AppImage
     runs-on: ubuntu-latest
     env:
-      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|somador-de-contas|latest|Somador-de-Contas-*-x86_64.AppImage.zsync
+      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -40,14 +40,14 @@ jobs:
         run: |
           npm run build
           npm run verify
-          git diff --exit-code -- somador-de-contas.html ../index.html
+          git diff --exit-code -- budget.html ../index.html
       - name: Instalar dependências do desktop
         working-directory: desktop
         run: npm ci
       - name: Gerar AppImage
         run: |
           ./scripts/build-appimage.sh
-          cmp app/somador-de-contas.html desktop/index.html
+          cmp app/budget.html desktop/index.html
       - name: Validar atualização sem FUSE
         run: |
           appimage="$(find desktop/dist -maxdepth 1 -name '*.AppImage' -type f -print -quit)"

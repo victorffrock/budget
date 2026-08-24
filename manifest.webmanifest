@@ -1,6 +1,6 @@
 {
-  "name": "Somador de Contas",
-  "short_name": "Somador",
+  "name": "Budget",
+  "short_name": "Budget",
   "description": "Soma o valor de boletos e faturas em PDF, tudo localmente.",
   "start_url": "./",
   "display": "standalone",
