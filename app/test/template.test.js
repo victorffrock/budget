@@ -17,6 +17,8 @@ test('oferece aparência automática e escolha manual persistente', () => {
   assert.match(template, /data-theme-preference="auto"/);
   assert.match(template, /data-theme-preference="light"/);
   assert.match(template, /data-theme-preference="dark"/);
+  assert.match(template, /onGnomeAccentChanged/);
+  assert.match(template, /--accent-standalone/);
   assert.match(template, /role="menuitemradio"/);
   assert.match(template, /prefers-color-scheme:dark/);
   assert.match(template, /__THEME_JS__/);

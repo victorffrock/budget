@@ -57,6 +57,8 @@ O AppImage usa uma barra de cabeçalho e menu de aplicativo no estilo GNOME. No 
 
 No mesmo menu, em **Aparência**, o modo **Automático** acompanha o tema do sistema. Na versão web, ele acompanha a preferência de tema do navegador. Os modos **Claro** e **Escuro** podem ser escolhidos manualmente e ficam salvos somente neste computador.
 
+No GNOME, o AppImage também acompanha a cor de destaque escolhida em **Configurações → Aparência** (azul, verde, roxo etc.), inclusive quando ela muda enquanto o aplicativo está aberto. Essa integração é local e opcional: fora do GNOME, ou se a preferência não estiver disponível, o Budget mantém a paleta azul padrão. A versão web também usa essa paleta padrão, pois navegadores não expõem a cor de destaque do sistema com segurança.
+
 Atalhos disponíveis:
 
 - `Ctrl+O`: adicionar boletos;

@@ -1,6 +1,9 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const { createApplicationMenuTemplate } = require('./menu');
+const { createGnomeAccentService } = require('./gnome-accent');
+
+let gnomeAccentService = null;
 
 function sendAppAction(action) {
   const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
@@ -42,6 +45,14 @@ function createWindow() {
 
   win.loadFile(path.join(__dirname, 'index.html'));
 
+  // O preload armazena a última cor recebida. Assim, mesmo que a interface
+  // ainda esteja carregando o PDF.js, ela recebe a preferência ao registrar o
+  // listener no renderer.
+  win.webContents.once('did-finish-load', () => {
+    const accent = gnomeAccentService && gnomeAccentService.getAccent();
+    if (accent && !win.isDestroyed()) win.webContents.send('budget:gnome-accent', accent);
+  });
+
   win.once('ready-to-show', () => win.show());
 }
 
@@ -56,12 +67,24 @@ ipcMain.on('window-close', (event) => {
 });
 
 app.whenReady().then(() => {
+  gnomeAccentService = createGnomeAccentService({
+    onAccentChange: (accent) => {
+      BrowserWindow.getAllWindows().forEach((win) => {
+        if (!win.isDestroyed()) win.webContents.send('budget:gnome-accent', accent);
+      });
+    }
+  });
+  gnomeAccentService.start();
   installApplicationMenu();
   createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('before-quit', () => {
+  if (gnomeAccentService) gnomeAccentService.stop();
 });
 
 app.on('window-all-closed', () => {

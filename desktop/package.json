@@ -31,6 +31,7 @@
     "productName": "Budget",
     "files": [
       "main.js",
+      "gnome-accent.js",
       "menu.js",
       "preload.js",
       "index.html",
