@@ -17,3 +17,9 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # init e analyze do CodeQL precisam usar a mesma versão. Agrupar essas
+    # atualizações evita pull requests individuais que falham na validação.
+    groups:
+      codeql:
+        patterns:
+          - "github/codeql-action/*"
