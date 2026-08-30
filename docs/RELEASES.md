@@ -76,7 +76,9 @@ contínua de tag `test`. Ela usa os mesmos nomes fixos de AppImage e `.zsync`,
 de modo que o Gear Lever consegue encontrar a próxima compilação de testes.
 Depois de integrar uma versão de teste uma única vez, ela passa a receber
 somente novas pré-releases; ela não atualiza nem substitui uma instalação
-estável. Não edite nem apague manualmente a release de tag `test`.
+estável. O AppImage de teste usa um identificador `.desktop` e ícone próprios,
+portanto pode coexistir com o Budget estável. Não edite nem apague manualmente
+a release de tag `test`.
 
 ## Versão estável
 

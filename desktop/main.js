@@ -1,8 +1,9 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { createApplicationMenuTemplate } = require('./menu');
 const { createGnomeAccentService } = require('./gnome-accent');
-const { getBuildChannel } = require('./build-channel');
+const { getBuildChannel, getBuildIdentity } = require('./build-channel');
 
 let gnomeAccentService = null;
 
@@ -22,6 +23,22 @@ function getCurrentBuildChannel() {
   });
 }
 
+function getCurrentBuildIdentity() {
+  return getBuildIdentity(getCurrentBuildChannel());
+}
+
+function getBuildIconDataUri(identity) {
+  if (identity.iconFile === 'icon.png') return null;
+  try {
+    const iconPath = path.join(__dirname, 'assets', identity.iconFile);
+    return `data:image/png;base64,${fs.readFileSync(iconPath).toString('base64')}`;
+  } catch (_error) {
+    // O ícone estável já vem embutido no HTML. Se o recurso opcional de teste
+    // não estiver disponível, a interface continua utilizável e identificada.
+    return null;
+  }
+}
+
 function sendAppAction(action) {
   const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
   if (win) win.webContents.send('budget:action', action);
@@ -36,6 +53,8 @@ function installApplicationMenu() {
 }
 
 function createWindow() {
+  const buildChannel = getCurrentBuildChannel();
+  const buildIdentity = getCurrentBuildIdentity();
   const preloadPath = app.isPackaged
     ? path.join(process.resourcesPath, 'preload.js')
     : path.join(__dirname, 'preload.js');
@@ -49,7 +68,7 @@ function createWindow() {
     autoHideMenuBar: true,
     frame: false,
     titleBarStyle: 'hidden',
-    icon: path.join(__dirname, 'assets', 'icon.png'),
+    icon: path.join(__dirname, 'assets', buildIdentity.iconFile),
     title: 'Budget',
     show: false,
     webPreferences: {
@@ -59,7 +78,7 @@ function createWindow() {
       preload: preloadPath,
       // O renderer recebe somente este valor validado; nunca dados de ambiente
       // ou metadados completos do pacote.
-      additionalArguments: [`--budget-build-channel=${getCurrentBuildChannel()}`]
+      additionalArguments: [`--budget-build-channel=${buildChannel}`]
     }
   });
 
@@ -71,6 +90,8 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => {
     const accent = gnomeAccentService && gnomeAccentService.getAccent();
     if (accent && !win.isDestroyed()) win.webContents.send('budget:gnome-accent', accent);
+    const buildIcon = getBuildIconDataUri(buildIdentity);
+    if (buildIcon && !win.isDestroyed()) win.webContents.send('budget:build-icon', buildIcon);
   });
 
   win.once('ready-to-show', () => win.show());

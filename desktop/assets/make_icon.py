@@ -1,9 +1,14 @@
+import sys
 from PIL import Image, ImageDraw, ImageFilter
 from pathlib import Path
 
 SCALE = 8
 S = 128 * SCALE
 def px(v): return int(round(v * SCALE))
+
+variant = sys.argv[1] if len(sys.argv) > 1 else "stable"
+if variant not in {"stable", "test"}:
+    raise SystemExit("Uso: make_icon.py [stable|test]")
 
 img = Image.new("RGBA", (S, S), (0,0,0,0))
 
@@ -13,6 +18,7 @@ BLUE_5 = (26,95,180,255)
 LIGHT_1 = (255,255,255,255)
 DARK_2 = (94,92,100,255)
 GREEN_5 = (38,162,105,255)
+YELLOW_5 = (246,211,45,255)
 
 margin = px(8)
 left = margin
@@ -78,12 +84,35 @@ for i, frac in enumerate([1.0, 0.68, 0.85]):
 badge_r = px(11)
 badge_cx = r_right - px(4)
 badge_cy = r_bottom - px(6)
-draw.ellipse([badge_cx-badge_r, badge_cy-badge_r, badge_cx+badge_r, badge_cy+badge_r], fill=GREEN_5)
-cw = px(1.8)
-draw.line([(badge_cx-px(5), badge_cy), (badge_cx-px(1.5), badge_cy+px(4))], fill=LIGHT_1, width=cw)
-draw.line([(badge_cx-px(1.5), badge_cy+px(4)), (badge_cx+px(5.5), badge_cy-px(4.5))], fill=LIGHT_1, width=cw)
+
+if variant == "stable":
+    draw.ellipse([badge_cx-badge_r, badge_cy-badge_r, badge_cx+badge_r, badge_cy+badge_r], fill=GREEN_5)
+    cw = px(1.8)
+    draw.line([(badge_cx-px(5), badge_cy), (badge_cx-px(1.5), badge_cy+px(4))], fill=LIGHT_1, width=cw)
+    draw.line([(badge_cx-px(1.5), badge_cy+px(4)), (badge_cx+px(5.5), badge_cy-px(4.5))], fill=LIGHT_1, width=cw)
+else:
+    # O frasco âmbar diferencia visualmente o canal experimental sem trocar a
+    # identidade principal do Budget. O desenho é simples para continuar
+    # legível em lançadores que exibem o ícone em 16 ou 32 pixels.
+    draw.ellipse([badge_cx-badge_r, badge_cy-badge_r, badge_cx+badge_r, badge_cy+badge_r], fill=YELLOW_5)
+    stroke = px(1.7)
+    neck_left = badge_cx - px(2.5)
+    neck_right = badge_cx + px(2.5)
+    neck_top = badge_cy - px(6.5)
+    shoulder_y = badge_cy - px(0.5)
+    flask = [
+        (neck_left, neck_top),
+        (neck_right, neck_top),
+        (neck_right, shoulder_y),
+        (badge_cx + px(5.5), badge_cy + px(5.5)),
+        (badge_cx - px(5.5), badge_cy + px(5.5)),
+        (neck_left, shoulder_y),
+    ]
+    draw.line(flask + [flask[0]], fill=LIGHT_1, width=stroke, joint="curve")
+    draw.line([(badge_cx-px(4), badge_cy+px(2)), (badge_cx+px(4), badge_cy+px(2))], fill=LIGHT_1, width=stroke)
 
 final = img.resize((512,512), Image.LANCZOS)
-out = Path(__file__).resolve().parent / "icon.png"
+filename = "icon-test.png" if variant == "test" else "icon.png"
+out = Path(__file__).resolve().parent / filename
 final.save(out)
 print("saved", final.size, "→", out)

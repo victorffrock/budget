@@ -104,13 +104,29 @@ APP_VERSION="$(node -p "require('./package.json').version")"
 if [ "$BUILD_CHANNEL" = test ]; then
   APPIMAGE_ARTIFACT_NAME="Budget-test-${APPIMAGE_ARCH}.\${ext}"
   APPIMAGE="$(pwd)/dist/Budget-test-${APPIMAGE_ARCH}.AppImage"
+  # Gear Lever identifica aplicativos pela entrada .desktop do AppImage. As
+  # substituições abaixo isolam completamente o canal de testes: ele recebe
+  # outro appId, outro arquivo .desktop, executável e ícone próprios.
+  set -- \
+    "--$ELECTRON_ARCH" \
+    "--config.artifactName=$APPIMAGE_ARTIFACT_NAME" \
+    "--config.extraMetadata.budgetBuildChannel=test" \
+    "--config.extraMetadata.desktopName=br.com.victorferreirafranco.budget.test" \
+    "--config.appId=br.com.victorferreirafranco.budget.test" \
+    "--config.productName=Budget Test" \
+    "--config.linux.executableName=budget-test" \
+    "--config.linux.icon=assets/icon-test.png"
 else
   APPIMAGE_ARTIFACT_NAME="Budget-\${version}-${APPIMAGE_ARCH}.\${ext}"
   APPIMAGE="$(pwd)/dist/Budget-${APP_VERSION}-${APPIMAGE_ARCH}.AppImage"
+  set -- \
+    "--$ELECTRON_ARCH" \
+    "--config.artifactName=$APPIMAGE_ARTIFACT_NAME" \
+    "--config.extraMetadata.budgetBuildChannel=stable"
 fi
 
 echo "==> Gerando AppImage $APPIMAGE_ARCH com runtime estático"
-npm run dist -- "--$ELECTRON_ARCH" "--config.artifactName=$APPIMAGE_ARTIFACT_NAME" "--config.extraMetadata.budgetBuildChannel=$BUILD_CHANNEL"
+npm run dist -- "$@"
 
 if [ ! -f "$APPIMAGE" ]; then
   echo "ERRO: electron-builder não gerou $APPIMAGE"
@@ -119,6 +135,10 @@ fi
 
 chmod +x "$APPIMAGE"
 test -x "$APPIMAGE"
+
+if [ "$BUILD_CHANNEL" = test ]; then
+  ../scripts/verify-test-appimage.sh "$APPIMAGE"
+fi
 
 if [ -z "${APPIMAGE_UPDATE_INFORMATION:-}" ]; then
   echo

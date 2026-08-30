@@ -30,6 +30,7 @@ test('mantém a identificação de versão de testes oculta até o desktop autor
   assert.match(template, /window\.budgetDesktop\.buildChannel === 'test'/);
   assert.match(template, /buildChannelBadge\.hidden = false/);
   assert.match(template, /document\.title = 'Budget — Teste'/);
+  assert.match(template, /window\.budgetDesktop\.onBuildIconChanged/);
 });
 
 test('mantém o foco acessível no menu e nos diálogos', () => {

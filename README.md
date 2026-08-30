@@ -85,8 +85,10 @@ Após essa primeira instalação, as atualizações voltam a ser automáticas.
 
 As versões de teste também podem ser integradas no Gear Lever. Elas usam um
 canal separado: recebem apenas novos testes e nunca substituem a instalação
-estável. A interface de uma versão de teste mostra a marca **TESTE** ao lado do
-nome do aplicativo para evitar confusão.
+estável. Elas possuem outra identidade de aplicativo e ícone próprio, portanto
+podem coexistir com a versão estável no menu de aplicações e no Gear Lever. A
+interface de uma versão de teste mostra a marca **TESTE** ao lado do nome do
+aplicativo para evitar confusão.
 
 ### Versões estáveis e de teste
 

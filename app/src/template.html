@@ -997,6 +997,12 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
       if (buildChannelBadge) buildChannelBadge.hidden = false;
       document.title = 'Budget — Teste';
     }
+    if (window.budgetDesktop.onBuildIconChanged) {
+      window.budgetDesktop.onBuildIconChanged(function(iconDataUri){
+        document.getElementById('hbIcon').src = iconDataUri;
+        document.getElementById('aboutIcon').src = iconDataUri;
+      });
+    }
     var btnMin = document.getElementById('btnMinimize');
     var btnClose = document.getElementById('btnClose');
     if (btnMin) btnMin.addEventListener('click', function(){ window.budgetDesktop.minimize(); });

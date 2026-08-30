@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { getBuildChannel, normalizeBuildChannel } = require('../build-channel.js');
+const { getBuildChannel, getBuildIdentity, normalizeBuildChannel } = require('../build-channel.js');
 
 test('usa stable como padrão seguro para canais ausentes ou inválidos', () => {
   assert.equal(normalizeBuildChannel(), 'stable');
@@ -27,4 +27,21 @@ test('uma versão empacotada não herda ambiente de desenvolvimento', () => {
     environment: { BUDGET_BUILD_CHANNEL: 'test' },
     packageInfo: {}
   }), 'stable');
+});
+
+test('mantém identidades de desktop separadas entre estável e teste', () => {
+  assert.deepEqual(getBuildIdentity('stable'), {
+    appId: 'br.com.victorferreirafranco.budget',
+    desktopName: 'br.com.victorferreirafranco.budget',
+    iconFile: 'icon.png',
+    productName: 'Budget',
+    executableName: 'budget'
+  });
+  assert.deepEqual(getBuildIdentity('test'), {
+    appId: 'br.com.victorferreirafranco.budget.test',
+    desktopName: 'br.com.victorferreirafranco.budget.test',
+    iconFile: 'icon-test.png',
+    productName: 'Budget Test',
+    executableName: 'budget-test'
+  });
 });
