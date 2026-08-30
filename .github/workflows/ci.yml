@@ -1,7 +1,10 @@
 name: Validar projeto
 
 on:
+  # Tags publicadas disparam somente o workflow de release. Assim, uma tag de
+  # pré-release não executa esta CI usando acidentalmente o canal estável.
   push:
+    branches: [main, test]
   pull_request:
 
 permissions:

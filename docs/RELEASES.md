@@ -14,8 +14,10 @@ O repositório mantém duas branches permanentes:
 | `main` | código da versão estável |
 
 Branches de trabalho podem ser criadas a partir de `test` e removidas depois da
-mesclagem. Não publique uma versão estável diretamente a partir de uma branch
-de trabalho.
+mesclagem. As branches permanentes são protegidas: use uma pull request para
+integrar mudanças em `test` ou promover `test` para `main`; a integração exige
+que as validações obrigatórias estejam aprovadas. Não publique uma versão
+estável diretamente a partir de uma branch de trabalho.
 
 ## Antes de criar uma release
 
@@ -43,6 +45,10 @@ de trabalho.
 
 3. Envie as alterações para `test` e espere a conclusão bem-sucedida de todos
    os jobs de CI e CodeQL no GitHub. A CI também valida os SBOMs e o AppImage.
+
+   A CI geral é executada apenas em pushes para `main` e `test` e em pull
+   requests. Tags não a executam: elas são validadas pelo workflow
+   `Publicar AppImage` quando a release correspondente é publicada.
 
 ## Pré-release
 
@@ -88,14 +94,11 @@ fontes de versão, gere novamente o HTML offline, execute a validação de vers�
 e espere a CI passar. Assim, por exemplo, `6.0.0-test.1` se torna `6.0.0` antes
 da publicação.
 
-Promova então esse commit final de `test` para `main`. Prefira o avanço rápido
-para evitar que outra alteração entre junto por acidente:
-
-```sh
-git checkout main
-git merge --ff-only test
-git push origin main
-```
+Promova então esse commit final de `test` para `main` por uma pull request no
+GitHub. Confira se ela contém apenas os commits esperados, espere as
+validações obrigatórias e escolha **Rebase and merge** (ou outro método linear
+equivalente disponível no repositório). A proteção de branch impede o push
+direto para `main`.
 
 Crie então uma tag estável com a mesma versão distribuída e publique uma
 release sem a marca **Pre-release**:
