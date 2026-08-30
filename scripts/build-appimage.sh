@@ -11,8 +11,9 @@
 # O alvo precisa corresponder à arquitetura da máquina que executa o script.
 # Os alvos suportados são x86_64 e aarch64. Quando omitido, ele é detectado.
 #
-# Resultado: desktop/dist/Budget-<versão>-<arquitetura>.AppImage e, com
-#            APPIMAGE_UPDATE_INFORMATION, o respectivo arquivo .zsync.
+# Resultado estável: desktop/dist/Budget-<versão>-<arquitetura>.AppImage.
+# Resultado de teste: desktop/dist/Budget-test-<arquitetura>.AppImage.
+# Com APPIMAGE_UPDATE_INFORMATION, também é gerado o respectivo .zsync.
 
 set -eu
 
@@ -20,6 +21,25 @@ cd "$(dirname "$0")/../desktop"
 
 REQUESTED_ARCH="${1:-${BUDGET_APPIMAGE_ARCH:-}}"
 HOST_MACHINE="$(uname -m)"
+BUILD_CHANNEL="${BUDGET_BUILD_CHANNEL:-}"
+
+if [ -z "$BUILD_CHANNEL" ]; then
+  # Ao gerar localmente na branch de testes, o AppImage deve se identificar
+  # como tal sem exigir que a pessoa configure uma variável manualmente.
+  if [ "$(git branch --show-current 2>/dev/null || true)" = "test" ]; then
+    BUILD_CHANNEL=test
+  else
+    BUILD_CHANNEL=stable
+  fi
+fi
+
+case "$BUILD_CHANNEL" in
+  stable|test) ;;
+  *)
+    echo "ERRO: canal de build inválido: $BUILD_CHANNEL"
+    exit 1
+    ;;
+esac
 
 normalize_arch() {
   case "$1" in
@@ -81,11 +101,16 @@ cp -f "$HTML_SRC" ./index.html
 echo "==> HTML copiado para desktop/index.html ($(wc -c < index.html) bytes)"
 
 APP_VERSION="$(node -p "require('./package.json').version")"
-APPIMAGE_ARTIFACT_NAME="Budget-\${version}-${APPIMAGE_ARCH}.\${ext}"
-APPIMAGE="$(pwd)/dist/Budget-${APP_VERSION}-${APPIMAGE_ARCH}.AppImage"
+if [ "$BUILD_CHANNEL" = test ]; then
+  APPIMAGE_ARTIFACT_NAME="Budget-test-${APPIMAGE_ARCH}.\${ext}"
+  APPIMAGE="$(pwd)/dist/Budget-test-${APPIMAGE_ARCH}.AppImage"
+else
+  APPIMAGE_ARTIFACT_NAME="Budget-\${version}-${APPIMAGE_ARCH}.\${ext}"
+  APPIMAGE="$(pwd)/dist/Budget-${APP_VERSION}-${APPIMAGE_ARCH}.AppImage"
+fi
 
 echo "==> Gerando AppImage $APPIMAGE_ARCH com runtime estático"
-npm run dist -- "--$ELECTRON_ARCH" "--config.artifactName=$APPIMAGE_ARTIFACT_NAME"
+npm run dist -- "--$ELECTRON_ARCH" "--config.artifactName=$APPIMAGE_ARTIFACT_NAME" "--config.extraMetadata.budgetBuildChannel=$BUILD_CHANNEL"
 
 if [ ! -f "$APPIMAGE" ]; then
   echo "ERRO: electron-builder não gerou $APPIMAGE"

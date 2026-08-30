@@ -25,6 +25,13 @@ test('oferece aparência automática e escolha manual persistente', () => {
   assert.match(template, /Seguir sistema ou navegador/);
 });
 
+test('mantém a identificação de versão de testes oculta até o desktop autorizá-la', () => {
+  assert.match(template, /id="buildChannelBadge" hidden>TESTE<\/span>/);
+  assert.match(template, /window\.budgetDesktop\.buildChannel === 'test'/);
+  assert.match(template, /buildChannelBadge\.hidden = false/);
+  assert.match(template, /document\.title = 'Budget — Teste'/);
+});
+
 test('mantém o foco acessível no menu e nos diálogos', () => {
   assert.doesNotMatch(template, /^\s*app-region\s*:/m);
   assert.match(template, /-webkit-app-region: drag/);

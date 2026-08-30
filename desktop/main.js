@@ -2,8 +2,25 @@ const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const { createApplicationMenuTemplate } = require('./menu');
 const { createGnomeAccentService } = require('./gnome-accent');
+const { getBuildChannel } = require('./build-channel');
 
 let gnomeAccentService = null;
+
+function getPackagedMetadata() {
+  try {
+    return require(path.join(app.getAppPath(), 'package.json'));
+  } catch (_error) {
+    return {};
+  }
+}
+
+function getCurrentBuildChannel() {
+  return getBuildChannel({
+    isPackaged: app.isPackaged,
+    environment: process.env,
+    packageInfo: app.isPackaged ? getPackagedMetadata() : null
+  });
+}
 
 function sendAppAction(action) {
   const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
@@ -39,7 +56,10 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      preload: preloadPath
+      preload: preloadPath,
+      // O renderer recebe somente este valor validado; nunca dados de ambiente
+      // ou metadados completos do pacote.
+      additionalArguments: [`--budget-build-channel=${getCurrentBuildChannel()}`]
     }
   });
 

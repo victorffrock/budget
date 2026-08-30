@@ -42,15 +42,26 @@ jobs:
           sudo apt-get install --yes zsync
       - name: Validar tag e versões
         run: node scripts/verify-release-version.cjs "${{ github.event.release.tag_name }}"
-      - name: Definir origem de atualização
+      - name: Definir canal e origem de atualização
         run: |
+          build_channel=stable
           release_channel=latest
+          appimage_name="Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+
           if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
-            # Pré-releases não devem procurar a release estável como atualização.
-            # Elas apontam para a própria tag e servem somente para teste manual.
-            release_channel="$RELEASE_TAG"
+            # O Gear Lever aceita uma tag explícita, mas não reconhece o
+            # atalho "latest-pre" do protocolo AppImage. A release contínua
+            # "test" mantém um endereço fixo com o AppImage mais recente.
+            build_channel=test
+            release_channel=test
+            appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
           fi
-          printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync" >> "$GITHUB_ENV"
+
+          {
+            printf '%s\n' "BUDGET_BUILD_CHANNEL=$build_channel"
+            printf '%s\n' "BUDGET_APPIMAGE_FILENAME=$appimage_name"
+            printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|$appimage_name.zsync"
+          } >> "$GITHUB_ENV"
       - name: Instalar dependências da aplicação
         working-directory: app
         run: npm ci --ignore-scripts
@@ -69,7 +80,7 @@ jobs:
           cmp app/budget.html desktop/index.html
       - name: Validar atualização sem FUSE
         run: |
-          appimage="desktop/dist/Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          appimage="desktop/dist/$BUDGET_APPIMAGE_FILENAME"
           test -f "$appimage"
           test -x "$appimage"
           test -s "$appimage.zsync"
@@ -83,7 +94,7 @@ jobs:
       - name: Gerar checksums
         run: |
           cd desktop/dist
-          appimage="Budget-$(node -p "require('../package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          appimage="$BUDGET_APPIMAGE_FILENAME"
           app_sbom="SBOM-app-$BUDGET_APPIMAGE_ARCH.cdx.json"
           desktop_sbom="SBOM-desktop-$BUDGET_APPIMAGE_ARCH.cdx.json"
           checksum_file="SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt"
@@ -99,3 +110,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$RELEASE_TAG" desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync desktop/dist/SBOM-*-$BUDGET_APPIMAGE_ARCH.cdx.json desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt --clobber
+      - name: Atualizar canal contínuo de testes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$BUDGET_BUILD_CHANNEL" != "test" ]; then
+            echo "Release estável: canal contínuo de testes não será alterado."
+            exit 0
+          fi
+
+          # As duas arquiteturas executam em paralelo. Se a outra matriz criar
+          # a release entre a consulta e a criação, a confirmação abaixo ainda
+          # permite que ambas enviem seus arquivos independentes.
+          if ! gh release view test >/dev/null 2>&1; then
+            gh release create test --prerelease --title "Budget — canal de testes" \
+              --notes "Canal contínuo de atualização para AppImages de teste." \
+              --target "$GITHUB_SHA" || gh release view test >/dev/null
+          fi
+
+          gh release upload test \
+            "desktop/dist/$BUDGET_APPIMAGE_FILENAME" \
+            "desktop/dist/$BUDGET_APPIMAGE_FILENAME.zsync" \
+            "desktop/dist/SBOM-app-$BUDGET_APPIMAGE_ARCH.cdx.json" \
+            "desktop/dist/SBOM-desktop-$BUDGET_APPIMAGE_ARCH.cdx.json" \
+            "desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt" \
+            --clobber

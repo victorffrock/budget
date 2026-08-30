@@ -57,7 +57,9 @@ git push origin v6.0.0-test.1
 No GitHub, crie a release para essa tag, marque **Pre-release** e publique. O
 workflow `Publicar AppImage` anexa automaticamente:
 
-- os AppImages `x86_64` e `aarch64`;
+- os AppImages `Budget-test-x86_64.AppImage` e
+  `Budget-test-aarch64.AppImage`, ambos identificados visualmente como
+  **TESTE**;
 - um arquivo `.zsync` para cada arquitetura;
 - `SHA256SUMS-x86_64.txt` e `SHA256SUMS-aarch64.txt`;
 - SBOMs separados para cada arquitetura.
@@ -68,6 +70,13 @@ consultada com `gh attestation verify`.
 
 Baixe o AppImage da pré-release e teste o fluxo que mudou antes de promover a
 versão.
+
+Além dos arquivos da pré-release versionada, o workflow atualiza a pré-release
+contínua de tag `test`. Ela usa os mesmos nomes fixos de AppImage e `.zsync`,
+de modo que o Gear Lever consegue encontrar a próxima compilação de testes.
+Depois de integrar uma versão de teste uma única vez, ela passa a receber
+somente novas pré-releases; ela não atualiza nem substitui uma instalação
+estável. Não edite nem apague manualmente a release de tag `test`.
 
 ## Versão estável
 
@@ -97,6 +106,10 @@ git push origin v6.0.0
 O workflow de release só deve ser considerado concluído quando todos os
 arquivos acima estiverem anexados, houver uma atestação para cada AppImage e
 cada arquitetura puder ser verificada com `sha256sum`.
+
+AppImages estáveis não recebem a marca **TESTE** e continuam apontando para o
+canal `latest`. Assim, a promoção do código para `main` remove a identificação
+de desenvolvimento automaticamente no próximo build estável.
 
 ## Correção de emergência
 

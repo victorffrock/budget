@@ -83,6 +83,11 @@ Esta mudança de identidade exige uma atualização manual única para instalaç
 anteriores: baixe o AppImage atual na página de releases e integre-o novamente.
 Após essa primeira instalação, as atualizações voltam a ser automáticas.
 
+As versões de teste também podem ser integradas no Gear Lever. Elas usam um
+canal separado: recebem apenas novos testes e nunca substituem a instalação
+estável. A interface de uma versão de teste mostra a marca **TESTE** ao lado do
+nome do aplicativo para evitar confusão.
+
 ### Versões estáveis e de teste
 
 O projeto mantém duas branches permanentes:
@@ -163,6 +168,15 @@ Para uma release deste repositório, use:
 
 ```sh
 APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync' \
+../scripts/build-appimage.sh x86_64
+```
+
+Para reproduzir localmente o canal de testes, use o nome de arquivo fixo e a
+tag contínua `test`:
+
+```sh
+BUDGET_BUILD_CHANNEL=test \
+APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|test|Budget-test-x86_64.AppImage.zsync' \
 ../scripts/build-appimage.sh x86_64
 ```
 
