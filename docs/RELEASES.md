@@ -13,10 +13,12 @@ O repositório mantém duas branches permanentes:
 | `test` | integração, testes e pré-releases |
 | `main` | código da versão estável |
 
-Branches de trabalho podem ser criadas a partir de `test` e removidas depois da
-mesclagem. As branches permanentes são protegidas: use uma pull request para
-integrar mudanças em `test` ou promover `test` para `main`; a integração exige
-que as validações obrigatórias estejam aprovadas. Não publique uma versão
+Branches de trabalho podem ser criadas a partir de `test`. Quando a pull request
+é mesclada no GitHub, a branch de origem é removida automaticamente; isso não
+se aplica a pull requests fechadas sem mesclagem, cujas branches podem ser
+removidas manualmente. As branches permanentes são protegidas. Use uma pull
+request para integrar mudanças em `test` ou promover `test` para `main`.
+A integração exige que as validações obrigatórias estejam aprovadas. Não publique uma versão
 estável diretamente a partir de uma branch de trabalho.
 
 ## Antes de criar uma release
@@ -101,7 +103,13 @@ equivalente disponível no repositório). A proteção de branch impede o push
 direto para `main`.
 
 Crie então uma tag estável com a mesma versão distribuída e publique uma
-release sem a marca **Pre-release**:
+release sem a marca **Pre-release**. Pelo GitHub, abra **Releases → Draft a
+new release**, informe uma tag nova como `v6.0.0`, mantenha `main` como alvo e
+clique em **Publish release**. O GitHub cria a tag apontando para o commit de
+`main` ao publicar a release.
+
+Como alternativa, a tag pode ser criada e enviada pelo terminal antes de abrir
+a página de releases:
 
 ```sh
 git tag -a v6.0.0 -m "Release 6.0.0"
