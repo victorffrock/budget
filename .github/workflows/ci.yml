@@ -1,7 +1,10 @@
 name: Validar projeto
 
 on:
+  # Tags publicadas disparam somente o workflow de release. Assim, uma tag de
+  # pré-release não executa esta CI usando acidentalmente o canal estável.
   push:
+    branches: [main, test]
   pull_request:
 
 permissions:
@@ -71,7 +74,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
-      APPIMAGE_UPDATE_INFORMATION: gh-releases-zsync|victorffrock|budget|latest|Budget-*-${{ matrix.appimage_arch }}.AppImage.zsync
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -81,6 +83,25 @@ jobs:
           cache-dependency-path: |
             app/package-lock.json
             desktop/package-lock.json
+      - name: Definir canal de build e atualização
+        run: |
+          build_channel=stable
+          release_channel=latest
+          appimage_name="Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+
+          # Pushes na test — e PRs destinados a ela — validam exatamente o
+          # artefato que será publicado no canal contínuo de testes.
+          if [ "$GITHUB_REF_NAME" = "test" ] || [ "$GITHUB_BASE_REF" = "test" ]; then
+            build_channel=test
+            release_channel=test
+            appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
+          fi
+
+          {
+            printf '%s\n' "BUDGET_BUILD_CHANNEL=$build_channel"
+            printf '%s\n' "BUDGET_APPIMAGE_FILENAME=$appimage_name"
+            printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|$appimage_name.zsync"
+          } >> "$GITHUB_ENV"
       - name: Instalar zsync
         run: |
           sudo apt-get update
@@ -106,7 +127,7 @@ jobs:
         run: |
           ./scripts/build-appimage.sh "$BUDGET_APPIMAGE_ARCH"
           cmp app/budget.html desktop/index.html
-          appimage="desktop/dist/Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          appimage="desktop/dist/$BUDGET_APPIMAGE_FILENAME"
           test -f "$appimage"
           test -x "$appimage"
           test -s "$appimage.zsync"

@@ -191,12 +191,34 @@
   .hb-start img{ width:18px; height:18px; border-radius:4px; }
   .hb-title{
     grid-column:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
     margin:0;
     text-align:center;
     font-size:14.5px;
     font-weight:700;
     color:var(--text);
     white-space:nowrap;
+  }
+  .build-channel-badge{
+    display:inline-flex;
+    align-items:center;
+    height:20px;
+    padding:0 7px;
+    border:1px solid var(--yellow-5);
+    border-radius:5px;
+    background:#fff8df;
+    color:#9c6a00;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.035em;
+    line-height:1;
+  }
+  :root[data-effective-theme="dark"] .build-channel-badge{
+    background:#493b11;
+    color:#ffcf62;
   }
   .hb-end{
     grid-column:3;
@@ -748,7 +770,7 @@
     <div class="hb-start">
       <img id="hbIcon" alt="" src="">
     </div>
-    <h1 class="hb-title">Budget</h1>
+    <h1 class="hb-title">Budget <span class="build-channel-badge" id="buildChannelBadge" hidden>TESTE</span></h1>
     <div class="hb-end">
       <div class="menu-wrap" id="menuWrap">
         <button type="button" class="menu-button" id="appMenuButton" title="Menu" aria-label="Menu" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu">
@@ -970,6 +992,17 @@ window.__TESSERACT_WORKER_SRC__ = __TESSERACT_WORKER_JSON__;
 
   if (window.budgetDesktop && window.budgetDesktop.isDesktop) {
     document.body.classList.add('is-desktop');
+    if (window.budgetDesktop.buildChannel === 'test') {
+      var buildChannelBadge = document.getElementById('buildChannelBadge');
+      if (buildChannelBadge) buildChannelBadge.hidden = false;
+      document.title = 'Budget — Teste';
+    }
+    if (window.budgetDesktop.onBuildIconChanged) {
+      window.budgetDesktop.onBuildIconChanged(function(iconDataUri){
+        document.getElementById('hbIcon').src = iconDataUri;
+        document.getElementById('aboutIcon').src = iconDataUri;
+      });
+    }
     var btnMin = document.getElementById('btnMinimize');
     var btnClose = document.getElementById('btnClose');
     if (btnMin) btnMin.addEventListener('click', function(){ window.budgetDesktop.minimize(); });

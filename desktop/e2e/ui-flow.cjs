@@ -53,7 +53,8 @@ async function run() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      preload: path.join(__dirname, '..', 'preload.js')
+      preload: path.join(__dirname, '..', 'preload.js'),
+      additionalArguments: ['--budget-build-channel=test']
     }
   });
 
@@ -64,12 +65,42 @@ async function run() {
     const initialState = await execute(window, `({
       statusHidden: document.getElementById('statusPage').hidden,
       manualActionParent: document.getElementById('addManualBtn').parentElement.id,
-      manualActionHostHidden: document.getElementById('manualActionHost').hidden
+      manualActionHostHidden: document.getElementById('manualActionHost').hidden,
+      buildChannel: window.budgetDesktop.buildChannel,
+      testBadgeHidden: document.getElementById('buildChannelBadge').hidden,
+      title: document.title
     })`);
     assert.deepEqual(initialState, {
       statusHidden: false,
       manualActionParent: 'statusActions',
-      manualActionHostHidden: true
+      manualActionHostHidden: true,
+      buildChannel: 'test',
+      testBadgeHidden: false,
+      title: 'Budget — Teste'
+    });
+
+    window.webContents.send('budget:build-icon', 'data:image/png;base64,dGVzdA==');
+    const testIconState = await execute(window, `
+      new Promise((resolve, reject) => {
+        const expected = 'data:image/png;base64,dGVzdA==';
+        const timeout = window.setTimeout(() => reject(new Error('O ícone de teste não chegou ao renderer.')), 3000);
+        const check = () => {
+          const headerIcon = document.getElementById('hbIcon').src;
+          if (headerIcon === expected) {
+            window.clearTimeout(timeout);
+            return resolve({
+              headerIcon,
+              aboutIcon: document.getElementById('aboutIcon').src
+            });
+          }
+          requestAnimationFrame(check);
+        };
+        check();
+      })
+    `);
+    assert.deepEqual(testIconState, {
+      headerIcon: 'data:image/png;base64,dGVzdA==',
+      aboutIcon: 'data:image/png;base64,dGVzdA=='
     });
 
     const themeState = await execute(window, `

@@ -14,8 +14,10 @@ O repositório mantém duas branches permanentes:
 | `main` | código da versão estável |
 
 Branches de trabalho podem ser criadas a partir de `test` e removidas depois da
-mesclagem. Não publique uma versão estável diretamente a partir de uma branch
-de trabalho.
+mesclagem. As branches permanentes são protegidas: use uma pull request para
+integrar mudanças em `test` ou promover `test` para `main`; a integração exige
+que as validações obrigatórias estejam aprovadas. Não publique uma versão
+estável diretamente a partir de uma branch de trabalho.
 
 ## Antes de criar uma release
 
@@ -44,6 +46,10 @@ de trabalho.
 3. Envie as alterações para `test` e espere a conclusão bem-sucedida de todos
    os jobs de CI e CodeQL no GitHub. A CI também valida os SBOMs e o AppImage.
 
+   A CI geral é executada apenas em pushes para `main` e `test` e em pull
+   requests. Tags não a executam: elas são validadas pelo workflow
+   `Publicar AppImage` quando a release correspondente é publicada.
+
 ## Pré-release
 
 Use uma versão SemVer de pré-release, como `6.0.0-test.1`, em todos os arquivos
@@ -57,7 +63,9 @@ git push origin v6.0.0-test.1
 No GitHub, crie a release para essa tag, marque **Pre-release** e publique. O
 workflow `Publicar AppImage` anexa automaticamente:
 
-- os AppImages `x86_64` e `aarch64`;
+- os AppImages `Budget-test-x86_64.AppImage` e
+  `Budget-test-aarch64.AppImage`, ambos identificados visualmente como
+  **TESTE**;
 - um arquivo `.zsync` para cada arquitetura;
 - `SHA256SUMS-x86_64.txt` e `SHA256SUMS-aarch64.txt`;
 - SBOMs separados para cada arquitetura.
@@ -69,6 +77,15 @@ consultada com `gh attestation verify`.
 Baixe o AppImage da pré-release e teste o fluxo que mudou antes de promover a
 versão.
 
+Além dos arquivos da pré-release versionada, o workflow atualiza a pré-release
+contínua de tag `test`. Ela usa os mesmos nomes fixos de AppImage e `.zsync`,
+de modo que o Gear Lever consegue encontrar a próxima compilação de testes.
+Depois de integrar uma versão de teste uma única vez, ela passa a receber
+somente novas pré-releases; ela não atualiza nem substitui uma instalação
+estável. O AppImage de teste usa um identificador `.desktop` e ícone próprios,
+portanto pode coexistir com o Budget estável. Não edite nem apague manualmente
+a release de tag `test`.
+
 ## Versão estável
 
 Depois de aprovar uma pré-release, prepare em `test` o commit final que troca
@@ -77,14 +94,11 @@ fontes de versão, gere novamente o HTML offline, execute a validação de vers�
 e espere a CI passar. Assim, por exemplo, `6.0.0-test.1` se torna `6.0.0` antes
 da publicação.
 
-Promova então esse commit final de `test` para `main`. Prefira o avanço rápido
-para evitar que outra alteração entre junto por acidente:
-
-```sh
-git checkout main
-git merge --ff-only test
-git push origin main
-```
+Promova então esse commit final de `test` para `main` por uma pull request no
+GitHub. Confira se ela contém apenas os commits esperados, espere as
+validações obrigatórias e escolha **Rebase and merge** (ou outro método linear
+equivalente disponível no repositório). A proteção de branch impede o push
+direto para `main`.
 
 Crie então uma tag estável com a mesma versão distribuída e publique uma
 release sem a marca **Pre-release**:
@@ -97,6 +111,10 @@ git push origin v6.0.0
 O workflow de release só deve ser considerado concluído quando todos os
 arquivos acima estiverem anexados, houver uma atestação para cada AppImage e
 cada arquitetura puder ser verificada com `sha256sum`.
+
+AppImages estáveis não recebem a marca **TESTE** e continuam apontando para o
+canal `latest`. Assim, a promoção do código para `main` remove a identificação
+de desenvolvimento automaticamente no próximo build estável.
 
 ## Correção de emergência
 
