@@ -28,4 +28,5 @@ test('oferece ações de arquivo e ajuda no menu nativo', () => {
 
 test('mantém a permissão de instalação do Electron na versão empacotada', () => {
   assert.equal(desktopPackage.allowScripts['electron@' + desktopPackage.devDependencies.electron], true);
+  assert.ok(desktopPackage.build.files.includes('navigation.js'));
 });
