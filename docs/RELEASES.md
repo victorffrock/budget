@@ -121,8 +121,13 @@ arquivos acima estiverem anexados, houver uma atestação para cada AppImage e
 cada arquitetura puder ser verificada com `sha256sum`.
 
 AppImages estáveis não recebem a marca **TESTE** e continuam apontando para o
-canal `latest`. Assim, a promoção do código para `main` remove a identificação
-de desenvolvimento automaticamente no próximo build estável.
+canal `latest`. Cada release também anexa um par de arquivos de nome fixo,
+`Budget-x86_64.AppImage`/`.zsync` e `Budget-aarch64.AppImage`/`.zsync`, usado
+exclusivamente como origem de atualização. Os arquivos versionados continuam
+disponíveis para download manual. Essa referência fixa permite ao Gear Lever
+encontrar a versão mais recente mesmo que o nome do AppImage distribuído mude.
+Assim, a promoção do código para `main` remove a identificação de
+desenvolvimento automaticamente no próximo build estável.
 
 ## Correção de emergência
 
