@@ -88,6 +88,10 @@ jobs:
           build_channel=stable
           release_channel=latest
           appimage_name="Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          # O AppImage estável usa um nome de .zsync fixo. Assim, o Gear
+          # Lever encontra a atualização na release mais recente mesmo quando
+          # o nome do binário distribuído inclui a versão.
+          update_zsync_name="Budget-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
 
           # Pushes na test — e PRs destinados a ela — validam exatamente o
           # artefato que será publicado no canal contínuo de testes.
@@ -95,12 +99,14 @@ jobs:
             build_channel=test
             release_channel=test
             appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
+            update_zsync_name="$appimage_name.zsync"
           fi
 
           {
             printf '%s\n' "BUDGET_BUILD_CHANNEL=$build_channel"
             printf '%s\n' "BUDGET_APPIMAGE_FILENAME=$appimage_name"
-            printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|$appimage_name.zsync"
+            printf '%s\n' "BUDGET_UPDATE_ZSYNC_FILENAME=$update_zsync_name"
+            printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|$update_zsync_name"
           } >> "$GITHUB_ENV"
       - name: Instalar zsync
         run: |

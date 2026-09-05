@@ -169,7 +169,7 @@ node scripts/verify-release-version.cjs
 Para uma release deste repositório, use:
 
 ```sh
-APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget-*-x86_64.AppImage.zsync' \
+APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget-x86_64.AppImage.zsync' \
 ../scripts/build-appimage.sh x86_64
 ```
 
