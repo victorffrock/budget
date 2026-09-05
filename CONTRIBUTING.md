@@ -46,5 +46,7 @@ com uma tela virtual; localmente ela precisa de uma sessão gráfica.
 Cada push para `main` ou `test` executa testes da aplicação, testes do
 Electron, auditoria de dependências, geração e validação do AppImage, SBOMs e
 CodeQL. Pull requests também recebem a revisão automática de dependências.
+O Dependabot abre atualizações em `test`, para que dependências sigam o mesmo
+fluxo de validação das demais mudanças antes de uma promoção para `main`.
 Essas verificações complementam, mas não substituem, a conferência manual dos
 valores extraídos de boletos.
