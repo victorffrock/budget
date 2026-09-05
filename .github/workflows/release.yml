@@ -94,10 +94,16 @@ jobs:
           cp "$BUDGET_APPIMAGE_FILENAME.zsync" "$BUDGET_UPDATE_ZSYNC_FILENAME"
 
           # As versões distribuídas antes da correção usavam um nome de
-          # .zsync versionado. Estes aliases permitem que instalações 6.1.3 e
-          # 6.1.4 migrem diretamente para o canal estável de nome fixo.
+          # .zsync versionado. O GithubUpdater do Gear Lever localiza o
+          # binário removendo apenas o sufixo ".zsync", sem interpretar a
+          # URL registrada dentro desse arquivo. Por isso, cada alias precisa
+          # publicar o par completo (AppImage e .zsync) com o nome histórico.
+          # Ambos contêm a versão atual e servem somente como ponte para que
+          # instalações 6.1.3 e 6.1.4 alcancem o canal estável de nome fixo.
           for legacy_version in 6.1.3 6.1.4; do
+            cp "$BUDGET_APPIMAGE_FILENAME" "Budget-$legacy_version-$BUDGET_APPIMAGE_ARCH.AppImage"
             cp "$BUDGET_APPIMAGE_FILENAME.zsync" "Budget-$legacy_version-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
+            cmp "$BUDGET_APPIMAGE_FILENAME" "Budget-$legacy_version-$BUDGET_APPIMAGE_ARCH.AppImage"
           done
 
           cmp "$BUDGET_APPIMAGE_FILENAME" "$stable_appimage"
