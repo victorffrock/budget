@@ -2,18 +2,24 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /app
+    # A branch de testes é a porta de entrada de qualquer mudança, inclusive
+    # atualizações automáticas de dependências. A promoção para main só ocorre
+    # após a validação completa da versão estável.
+    target-branch: test
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: npm
     directory: /desktop
+    target-branch: test
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: test
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
