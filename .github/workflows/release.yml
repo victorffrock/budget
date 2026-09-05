@@ -47,6 +47,11 @@ jobs:
           build_channel=stable
           release_channel=latest
           appimage_name="Budget-$(node -p "require('./desktop/package.json').version")-$BUDGET_APPIMAGE_ARCH.AppImage"
+          # A origem de atualização precisa ter nome fixo: o AppImage antigo
+          # só conhece esta referência e o Gear Lever a procura na release
+          # mais recente. O binário versionado continua disponível para
+          # download manual e histórico de releases.
+          update_zsync_name="Budget-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
 
           if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
             # O Gear Lever aceita uma tag explícita, mas não reconhece o
@@ -55,12 +60,14 @@ jobs:
             build_channel=test
             release_channel=test
             appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
+            update_zsync_name="$appimage_name.zsync"
           fi
 
           {
             printf '%s\n' "BUDGET_BUILD_CHANNEL=$build_channel"
             printf '%s\n' "BUDGET_APPIMAGE_FILENAME=$appimage_name"
-            printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|$appimage_name.zsync"
+            printf '%s\n' "BUDGET_UPDATE_ZSYNC_FILENAME=$update_zsync_name"
+            printf '%s\n' "APPIMAGE_UPDATE_INFORMATION=gh-releases-zsync|victorffrock|budget|$release_channel|$update_zsync_name"
           } >> "$GITHUB_ENV"
       - name: Instalar dependências da aplicação
         working-directory: app
@@ -78,6 +85,23 @@ jobs:
         run: |
           ./scripts/build-appimage.sh "$BUDGET_APPIMAGE_ARCH"
           cmp app/budget.html desktop/index.html
+      - name: Preparar origem estável de atualização
+        if: env.RELEASE_IS_PRERELEASE == 'false'
+        run: |
+          cd desktop/dist
+          stable_appimage="Budget-$BUDGET_APPIMAGE_ARCH.AppImage"
+          cp "$BUDGET_APPIMAGE_FILENAME" "$stable_appimage"
+          cp "$BUDGET_APPIMAGE_FILENAME.zsync" "$BUDGET_UPDATE_ZSYNC_FILENAME"
+
+          # As versões distribuídas antes da correção usavam um nome de
+          # .zsync versionado. Estes aliases permitem que instalações 6.1.3 e
+          # 6.1.4 migrem diretamente para o canal estável de nome fixo.
+          for legacy_version in 6.1.3 6.1.4; do
+            cp "$BUDGET_APPIMAGE_FILENAME.zsync" "Budget-$legacy_version-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
+          done
+
+          cmp "$BUDGET_APPIMAGE_FILENAME" "$stable_appimage"
+          cmp "$BUDGET_APPIMAGE_FILENAME.zsync" "$BUDGET_UPDATE_ZSYNC_FILENAME"
       - name: Validar atualização sem FUSE
         run: |
           appimage="desktop/dist/$BUDGET_APPIMAGE_FILENAME"
@@ -101,7 +125,7 @@ jobs:
           npm --prefix ../../app sbom --sbom-format=cyclonedx --package-lock-only > "$app_sbom"
           npm --prefix .. sbom --sbom-format=cyclonedx --package-lock-only > "$desktop_sbom"
           node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" "$app_sbom" "$desktop_sbom"
-          sha256sum "$appimage" "$appimage.zsync" "$app_sbom" "$desktop_sbom" > "$checksum_file"
+          sha256sum Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync "$app_sbom" "$desktop_sbom" > "$checksum_file"
       - name: Atestar a procedência do AppImage
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
