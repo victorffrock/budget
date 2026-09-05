@@ -79,9 +79,10 @@ O AppImage do Budget traz os dados de atualização do GitHub incorporados. Abra
 a versão atual no Gear Lever e integre-a ao menu de aplicações. Depois disso,
 o próprio Gear Lever identifica e instala as próximas releases automaticamente.
 
-Esta mudança de identidade exige uma atualização manual única para instalações
-anteriores: baixe o AppImage atual na página de releases e integre-o novamente.
-Após essa primeira instalação, as atualizações voltam a ser automáticas.
+As instalações estáveis 6.1.3 e 6.1.4 recebem uma ponte automática para o
+canal atual. Versões ainda mais antigas ou arquivos que foram integrados com
+uma origem personalizada podem exigir uma reinstalação manual única; depois
+dela, as atualizações voltam a ser automáticas.
 
 As versões de teste também podem ser integradas no Gear Lever. Elas usam um
 canal separado: recebem apenas novos testes e nunca substituem a instalação
@@ -173,12 +174,13 @@ APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest|Budget
 ../scripts/build-appimage.sh x86_64
 ```
 
-Para reproduzir localmente o canal de testes, use o nome de arquivo fixo e a
-tag contínua `test`:
+Para reproduzir localmente o canal de testes, use o nome de arquivo fixo e o
+canal `latest-pre`. É esse valor que o Gear Lever usa para procurar somente
+pré-releases:
 
 ```sh
 BUDGET_BUILD_CHANNEL=test \
-APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|test|Budget-test-x86_64.AppImage.zsync' \
+APPIMAGE_UPDATE_INFORMATION='gh-releases-zsync|victorffrock|budget|latest-pre|Budget-test-x86_64.AppImage.zsync' \
 ../scripts/build-appimage.sh x86_64
 ```
 
