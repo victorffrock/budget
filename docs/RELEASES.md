@@ -79,9 +79,14 @@ consultada com `gh attestation verify`.
 Baixe o AppImage da pré-release e teste o fluxo que mudou antes de promover a
 versão.
 
+O workflow valida que a tag, a versão e a branch de destino são compatíveis
+com o canal de testes. Depois do upload, ele consulta os assets da release e
+falha se faltar algum par AppImage/`.zsync` necessário ao Gear Lever.
+
 Além dos arquivos da pré-release versionada, o workflow atualiza a pré-release
-contínua de tag `test`. Ela usa os mesmos nomes fixos de AppImage e `.zsync`,
-de modo que o Gear Lever consegue encontrar a próxima compilação de testes.
+contínua de tag `test`, que serve como endereço fixo para download manual. O
+Gear Lever recebe no AppImage a origem `latest-pre`: ela consulta as
+pré-releases publicadas e seleciona o arquivo `Budget-test` mais recente.
 Depois de integrar uma versão de teste uma única vez, ela passa a receber
 somente novas pré-releases; ela não atualiza nem substitui uma instalação
 estável. O AppImage de teste usa um identificador `.desktop` e ícone próprios,
@@ -119,6 +124,11 @@ git push origin v6.0.0
 O workflow de release só deve ser considerado concluído quando todos os
 arquivos acima estiverem anexados, houver uma atestação para cada AppImage e
 cada arquitetura puder ser verificada com `sha256sum`.
+
+O workflow aceita uma release estável somente quando a tag aponta para `main`,
+com uma versão sem sufixo de pré-release. Ele também valida, após o upload, os
+nomes fixos do canal estável e os pares de compatibilidade usados pelo Gear
+Lever para migrar instalações 6.1.3 e 6.1.4.
 
 AppImages estáveis não recebem a marca **TESTE** e continuam apontando para o
 canal `latest`. Cada release também anexa um par de arquivos de nome fixo,

@@ -97,7 +97,10 @@ jobs:
           # artefato que será publicado no canal contínuo de testes.
           if [ "$GITHUB_REF_NAME" = "test" ] || [ "$GITHUB_BASE_REF" = "test" ]; then
             build_channel=test
-            release_channel=test
+            # O GithubUpdater do Gear Lever lista pré-releases somente com
+            # este valor. A tag contínua "test" é um espelho para download,
+            # não uma origem consultada pelo atualizador.
+            release_channel=latest-pre
             appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
             update_zsync_name="$appimage_name.zsync"
           fi
@@ -144,3 +147,13 @@ jobs:
             -v "$PWD/desktop/dist:/dist:ro" ubuntu:24.04 \
             "/dist/$(basename "$appimage")" --appimage-updateinformation)"
           test "$update_info" = "$APPIMAGE_UPDATE_INFORMATION"
+
+  release-contract:
+    name: Contrato de publicação
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Exercita a regra que será aplicada novamente depois do upload da
+      # release. Isto impede que um .zsync seja publicado sem o AppImage de
+      # mesmo nome que o GithubUpdater do Gear Lever espera encontrar.
+      - run: node --test scripts/test/*.test.cjs
