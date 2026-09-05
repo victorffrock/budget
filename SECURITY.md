@@ -49,4 +49,5 @@ As Actions são fixadas em commits imutáveis e atualizadas pelo Dependabot. As
 atualizações automáticas são abertas primeiro em `test`, passam pelas mesmas
 verificações e só chegam a `main` por uma promoção validada. O Electron é
 executado com isolamento de contexto, sandbox e integração Node desativada na
-interface de usuário.
+interface de usuário. Navegações e pop-ups externos são bloqueados dentro do
+aplicativo; links HTTPS aprovados são abertos no navegador padrão.
