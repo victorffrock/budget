@@ -54,11 +54,12 @@ jobs:
           update_zsync_name="Budget-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
 
           if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
-            # O Gear Lever aceita uma tag explícita, mas não reconhece o
-            # atalho "latest-pre" do protocolo AppImage. A release contínua
-            # "test" mantém um endereço fixo com o AppImage mais recente.
+            # O GithubUpdater do Gear Lever consulta todas as releases quando
+            # recebe "latest-pre". A tag explícita "test" não é consultada
+            # por esse mecanismo, embora continue sendo atualizada abaixo
+            # como um canal contínuo para download manual.
             build_channel=test
-            release_channel=test
+            release_channel=latest-pre
             appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
             update_zsync_name="$appimage_name.zsync"
           fi
