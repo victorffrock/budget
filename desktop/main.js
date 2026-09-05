@@ -1,9 +1,10 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { createApplicationMenuTemplate } = require('./menu');
 const { createGnomeAccentService } = require('./gnome-accent');
 const { getBuildChannel, getBuildIdentity } = require('./build-channel');
+const { installNavigationGuard } = require('./navigation');
 
 let gnomeAccentService = null;
 
@@ -81,6 +82,10 @@ function createWindow() {
       additionalArguments: [`--budget-build-channel=${buildChannel}`]
     }
   });
+
+  // Conteúdo remoto nunca deve ocupar uma janela do Budget. Os únicos links
+  // externos da interface são HTTPS e são encaminhados ao navegador padrão.
+  installNavigationGuard(win.webContents, shell);
 
   win.loadFile(path.join(__dirname, 'index.html'));
 

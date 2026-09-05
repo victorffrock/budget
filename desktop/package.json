@@ -34,6 +34,7 @@
       "build-channel.js",
       "gnome-accent.js",
       "menu.js",
+      "navigation.js",
       "preload.js",
       "index.html",
       "assets/**/*"
