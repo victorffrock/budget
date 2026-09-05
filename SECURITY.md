@@ -45,6 +45,8 @@ arquivo baixado não foi alterado.
 | Validação do AppImage e SBOM | CI e release | verificar atualização, distribuição e inventário de componentes |
 | Atestação de procedência | publicação de release | vincular o AppImage ao workflow oficial |
 
-As Actions são fixadas em commits imutáveis e atualizadas pelo Dependabot. O
-Electron é executado com isolamento de contexto, sandbox e integração Node
-desativada na interface de usuário.
+As Actions são fixadas em commits imutáveis e atualizadas pelo Dependabot. As
+atualizações automáticas são abertas primeiro em `test`, passam pelas mesmas
+verificações e só chegam a `main` por uma promoção validada. O Electron é
+executado com isolamento de contexto, sandbox e integração Node desativada na
+interface de usuário.
