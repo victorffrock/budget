@@ -27,8 +27,13 @@ jobs:
       BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
       RELEASE_TAG: ${{ github.event.release.tag_name }}
       RELEASE_IS_PRERELEASE: ${{ github.event.release.prerelease }}
+      RELEASE_TARGET: ${{ github.event.release.target_commitish }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # A release deve sempre ser construída a partir da tag publicada,
+          # nunca a partir do estado posterior da branch padrão.
+          ref: ${{ github.event.release.tag_name }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
@@ -40,8 +45,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes zsync
-      - name: Validar tag e versões
-        run: node scripts/verify-release-version.cjs "${{ github.event.release.tag_name }}"
+      - name: Validar origem, canal, tag e versões
+        run: |
+          release_channel=stable
+          expected_target=main
+
+          if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
+            release_channel=test
+            expected_target=test
+          fi
+
+          test "$RELEASE_TARGET" = "$expected_target" || {
+            echo "ERRO: uma release $release_channel deve apontar para $expected_target, não para $RELEASE_TARGET."
+            exit 1
+          }
+
+          node scripts/verify-release-version.cjs "$RELEASE_TAG" "$release_channel"
       - name: Definir canal e origem de atualização
         run: |
           build_channel=stable
@@ -54,11 +73,12 @@ jobs:
           update_zsync_name="Budget-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
 
           if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
-            # O Gear Lever aceita uma tag explícita, mas não reconhece o
-            # atalho "latest-pre" do protocolo AppImage. A release contínua
-            # "test" mantém um endereço fixo com o AppImage mais recente.
+            # O GithubUpdater do Gear Lever consulta todas as releases quando
+            # recebe "latest-pre". A tag explícita "test" não é consultada
+            # por esse mecanismo, embora continue sendo atualizada abaixo
+            # como um canal contínuo para download manual.
             build_channel=test
-            release_channel=test
+            release_channel=latest-pre
             appimage_name="Budget-test-$BUDGET_APPIMAGE_ARCH.AppImage"
             update_zsync_name="$appimage_name.zsync"
           fi
@@ -155,6 +175,16 @@ jobs:
           fi
 
           gh release upload "$RELEASE_TAG" "$@" --clobber
+      - name: Verificar assets de atualização publicados
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          budget_version="$(node -p "require('./desktop/package.json').version")"
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' |
+            node scripts/verify-release-assets.cjs \
+              --channel "$BUDGET_BUILD_CHANNEL" \
+              --arch "$BUDGET_APPIMAGE_ARCH" \
+              --version "$budget_version"
       - name: Atualizar canal contínuo de testes
         env:
           GH_TOKEN: ${{ github.token }}
@@ -180,3 +210,10 @@ jobs:
             "desktop/dist/SBOM-desktop-$BUDGET_APPIMAGE_ARCH.cdx.json" \
             "desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt" \
             --clobber
+
+          budget_version="$(node -p "require('./desktop/package.json').version")"
+          gh release view test --json assets --jq '.assets[].name' |
+            node scripts/verify-release-assets.cjs \
+              --channel test \
+              --arch "$BUDGET_APPIMAGE_ARCH" \
+              --version "$budget_version"

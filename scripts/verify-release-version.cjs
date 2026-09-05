@@ -11,6 +11,7 @@ const rootDir = path.join(__dirname, '..');
 const appPackage = require(path.join(rootDir, 'app', 'package.json'));
 const desktopPackage = require(path.join(rootDir, 'desktop', 'package.json'));
 const releaseTag = process.argv[2];
+const releaseChannel = process.argv[3];
 
 assert.equal(
   appPackage.version,
@@ -26,4 +27,25 @@ if (releaseTag) {
   );
 }
 
-console.log(`Versões sincronizadas: ${appPackage.version}${releaseTag ? ` (${releaseTag})` : ''}.`);
+if (releaseChannel) {
+  assert.ok(
+    ['stable', 'test'].includes(releaseChannel),
+    'o canal de release deve ser stable ou test'
+  );
+
+  const versionPattern = releaseChannel === 'test'
+    ? /^\d+\.\d+\.\d+-test\.\d+$/
+    : /^\d+\.\d+\.\d+$/;
+
+  assert.match(
+    appPackage.version,
+    versionPattern,
+    `a versão ${appPackage.version} não corresponde ao canal ${releaseChannel}`
+  );
+}
+
+console.log(
+  `Versões sincronizadas: ${appPackage.version}` +
+  `${releaseTag ? ` (${releaseTag})` : ''}` +
+  `${releaseChannel ? ` [${releaseChannel}]` : ''}.`
+);
