@@ -125,15 +125,30 @@ jobs:
           npm --prefix ../../app sbom --sbom-format=cyclonedx --package-lock-only > "$app_sbom"
           npm --prefix .. sbom --sbom-format=cyclonedx --package-lock-only > "$desktop_sbom"
           node -e "for (const file of process.argv.slice(1)) JSON.parse(require('node:fs').readFileSync(file, 'utf8'));" "$app_sbom" "$desktop_sbom"
-          sha256sum Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync "$app_sbom" "$desktop_sbom" > "$checksum_file"
+          sha256sum Budget*-$BUDGET_APPIMAGE_ARCH.AppImage Budget*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync "$app_sbom" "$desktop_sbom" > "$checksum_file"
       - name: Atestar a procedência do AppImage
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-path: desktop/dist/Budget-*-${{ matrix.appimage_arch }}.AppImage
+          subject-path: desktop/dist/Budget*-${{ matrix.appimage_arch }}.AppImage
       - name: Anexar AppImage e metadados de atualização
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync desktop/dist/SBOM-*-$BUDGET_APPIMAGE_ARCH.cdx.json desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt --clobber
+        run: |
+          # Mantém o binário versionado para download manual. Nas releases
+          # estáveis, inclui também a cópia de nome fixo usada pelo Gear Lever.
+          set -- \
+            desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage \
+            desktop/dist/Budget-*-$BUDGET_APPIMAGE_ARCH.AppImage.zsync \
+            desktop/dist/SBOM-*-$BUDGET_APPIMAGE_ARCH.cdx.json \
+            desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt
+
+          if [ "$BUDGET_BUILD_CHANNEL" = stable ]; then
+            set -- "$@" \
+              "desktop/dist/Budget-$BUDGET_APPIMAGE_ARCH.AppImage" \
+              "desktop/dist/Budget-$BUDGET_APPIMAGE_ARCH.AppImage.zsync"
+          fi
+
+          gh release upload "$RELEASE_TAG" "$@" --clobber
       - name: Atualizar canal contínuo de testes
         env:
           GH_TOKEN: ${{ github.token }}
