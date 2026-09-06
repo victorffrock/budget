@@ -18,14 +18,21 @@ function findTestedPrerelease(releases, stableVersion) {
   );
   assert.ok(Array.isArray(releases), 'a resposta de releases deve ser uma lista');
 
-  const escapedVersion = stableVersion.replace(/\./g, '\\.');
-  const tagPattern = new RegExp(`^v${escapedVersion}-test\\.(\\d+)$`);
+  const tagPrefix = `v${stableVersion}-test.`;
   const candidates = releases
-    .map((release) => ({ release, match: tagPattern.exec(release.tag_name || '') }))
-    .filter(({ release, match }) => (
-      match && release.prerelease === true && release.draft === false
+    .map((release) => {
+      const tagName = release.tag_name || '';
+      const testNumber = tagName.startsWith(tagPrefix)
+        ? tagName.slice(tagPrefix.length)
+        : '';
+      return { release, testNumber };
+    })
+    .filter(({ release, testNumber }) => (
+      /^\d+$/.test(testNumber) &&
+      release.prerelease === true &&
+      release.draft === false
     ))
-    .sort((left, right) => Number(right.match[1]) - Number(left.match[1]));
+    .sort((left, right) => Number(right.testNumber) - Number(left.testNumber));
 
   assert.ok(
     candidates.length > 0,
