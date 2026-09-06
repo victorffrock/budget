@@ -37,3 +37,18 @@ test('o contrato de testes usa somente a identidade separada do canal test', () 
   ]);
   assert.doesNotThrow(() => validateReleaseAssets(assets, contract));
 });
+
+test('ignora upload parcial da outra arquitetura durante jobs paralelos', () => {
+  const x86Assets = [
+    'Budget-test-x86_64.AppImage',
+    'Budget-test-x86_64.AppImage.zsync',
+    // O arquivo ARM pode aparecer sozinho enquanto seu job ainda envia o par.
+    'Budget-test-aarch64.AppImage.zsync'
+  ];
+
+  assert.doesNotThrow(() => validateReleaseAssets(x86Assets, {
+    channel: 'test',
+    arch: 'x86_64',
+    version: '6.1.8-test.1'
+  }));
+});
