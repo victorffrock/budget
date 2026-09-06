@@ -17,9 +17,10 @@ Obrigado por querer melhorar o Budget.
 3. Na pasta `desktop`, execute `npm ci`, `npm test` e `npm run test:ui`.
 4. Inclua os três arquivos gerados — `app/budget.html`, `desktop/index.html` e
    `index.html` — quando mudar a interface ou a lógica da aplicação.
-5. Se a mudança deve gerar um novo AppImage de teste, use uma versão inédita
-   com sufixo `-test.N` e execute `node scripts/verify-release-version.cjs`.
-   A CI recusa a reutilização de uma versão já associada a outro commit.
+5. Qualquer mudança na aplicação, no desktop, nos scripts ou nos workflows de
+   publicação deve usar uma versão inédita com sufixo `-test.N`. Execute
+   `node scripts/verify-release-version.cjs`. A CI recusa mudanças distribuídas
+   sem incremento, versões regressivas e versões já associadas a outro commit.
 6. Explique no pull request como a alteração foi testada.
 
 Não inclua boletos, faturas ou outros documentos reais no repositório ou nos testes.
@@ -27,6 +28,8 @@ Não inclua boletos, faturas ou outros documentos reais no repositório ou nos t
 Depois de validada, uma alteração segue para `test`. A promoção de `test` para
 `main` é reservada a uma versão estável e está documentada em
 [docs/RELEASES.md](docs/RELEASES.md).
+Pull requests para `main` que não representem exatamente a árvore atual de
+`test` são recusadas, inclusive quando alteram somente documentação ou CI.
 
 ## Organização do código
 
@@ -46,9 +49,10 @@ com uma tela virtual; localmente ela precisa de uma sessão gráfica.
 
 Cada push para `main` ou `test` executa testes da aplicação, testes do
 Electron, auditoria de dependências, geração e validação do AppImage, SBOMs e
-CodeQL. Depois de um push validado em `test`, uma versão inédita `-test.N` é
-publicada automaticamente como pré-release atualizável. Pull requests também
-recebem a revisão automática de dependências.
+CodeQL. O CodeQL da própria CI precisa terminar antes da publicação. Depois de
+um push validado em `test`, uma versão inédita `-test.N` é preparada como
+rascunho e só é publicada quando os artefatos das duas arquiteturas estão
+completos. Pull requests também recebem a revisão automática de dependências.
 O Dependabot abre atualizações em `test`, para que dependências sigam o mesmo
 fluxo de validação das demais mudanças antes de uma promoção para `main`.
 Essas verificações complementam, mas não substituem, a conferência manual dos

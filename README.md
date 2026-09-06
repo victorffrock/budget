@@ -78,6 +78,10 @@ Atalhos disponíveis:
 O AppImage do Budget traz os dados de atualização do GitHub incorporados. Abra
 a versão atual no Gear Lever e integre-a ao menu de aplicações. Depois disso,
 o próprio Gear Lever identifica e instala as próximas releases automaticamente.
+Uma release só se torna visível depois que os AppImages x86_64 e aarch64, seus
+arquivos `.zsync`, checksums e SBOMs foram gerados e conferidos. Se uma
+compilação falhar, ela permanece como rascunho e o Gear Lever continua usando
+a última versão completa.
 
 As instalações estáveis 6.1.3 e 6.1.4 recebem uma ponte automática para o
 canal atual. Versões ainda mais antigas ou arquivos que foram integrados com
@@ -98,13 +102,20 @@ O projeto mantém duas branches permanentes:
 - `test`: recebe mudanças e pré-releases para validação;
 - `main`: contém somente versões estáveis publicadas.
 
+Toda mudança começa em uma branch temporária criada a partir de `test` e volta
+para `test` por pull request. Alterações distribuídas precisam incrementar uma
+versão inédita com sufixo `-test.N`; a CI recusa silenciosamente reutilizar uma
+versão antiga ou deixar o código mudar sem nova pré-release. CodeQL faz parte
+direta da barreira de publicação.
+
 Uma pré-release nunca substitui a versão estável indicada pelo Gear Lever. A
 promoção para `main` só acontece depois dos testes automatizados e da
-verificação manual da pré-release. Ao integrar em `test` uma versão inédita
-com sufixo `-test.N`, a CI cria e publica automaticamente os AppImages de
-teste. Uma release estável é recusada se a pré-release correspondente não
-existir, não estiver completa ou contiver código distribuído diferente. O
-processo completo está em [docs/RELEASES.md](docs/RELEASES.md).
+verificação manual da pré-release. A pull request para `main` é aceita somente
+se sua árvore inteira for idêntica ao estado atual de `test`, e a publicação
+estável ocorre pelo workflow controlado **Promover release estável**. Ela é
+recusada se a pré-release correspondente não existir, não estiver completa ou
+contiver código distribuído diferente. O processo completo está em
+[docs/RELEASES.md](docs/RELEASES.md).
 
 ## Observações
 
