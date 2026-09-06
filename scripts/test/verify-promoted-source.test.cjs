@@ -1,7 +1,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { normalizeManifest } = require('../verify-promoted-source.cjs');
+const {
+  SOURCE_PATHS,
+  normalizeManifest
+} = require('../verify-promoted-source.cjs');
+
+test('inclui a automação de release no código que precisa ter sido testado', () => {
+  assert.ok(SOURCE_PATHS.includes('.github/workflows'));
+  assert.ok(SOURCE_PATHS.includes('scripts'));
+});
 
 test('ignora somente os campos de versão dos manifestos', () => {
   const prerelease = normalizeManifest({

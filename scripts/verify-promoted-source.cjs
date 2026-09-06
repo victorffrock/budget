@@ -14,14 +14,14 @@ const VERSIONED_MANIFESTS = Object.freeze([
 ]);
 
 const SOURCE_PATHS = Object.freeze([
+  '.github/workflows',
   'app/src',
   'app/build.py',
   'desktop',
   ':(exclude)desktop/index.html',
   ':(exclude)desktop/package.json',
   ':(exclude)desktop/package-lock.json',
-  'scripts/build-appimage.sh',
-  'scripts/verify-test-appimage.sh',
+  'scripts',
   'icon.png',
   'manifest.webmanifest',
   'sw.js'
@@ -43,9 +43,22 @@ function readJsonAtRef(ref, file) {
   return JSON.parse(contents);
 }
 
-function verifyPromotedSource(testedRef, stableRef) {
+function verifyPromotedSource(testedRef, stableRef, testBranchRef) {
   assert.ok(testedRef, 'informe a tag da pré-release');
   assert.ok(stableRef, 'informe a referência estável');
+
+  if (testBranchRef) {
+    const ancestry = spawnSync(
+      'git',
+      ['merge-base', '--is-ancestor', testedRef, testBranchRef],
+      { encoding: 'utf8' }
+    );
+    assert.equal(
+      ancestry.status,
+      0,
+      `${testedRef} não pertence ao histórico aprovado de ${testBranchRef}`
+    );
+  }
 
   const diff = spawnSync(
     'git',
@@ -69,7 +82,7 @@ function verifyPromotedSource(testedRef, stableRef) {
 
 function main() {
   try {
-    verifyPromotedSource(process.argv[2], process.argv[3]);
+    verifyPromotedSource(process.argv[2], process.argv[3], process.argv[4]);
     console.log(`Código promovido corresponde à pré-release ${process.argv[2]}.`);
   } catch (error) {
     console.error(`ERRO: ${error.message}`);
@@ -79,4 +92,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { normalizeManifest, verifyPromotedSource };
+module.exports = { SOURCE_PATHS, normalizeManifest, verifyPromotedSource };
