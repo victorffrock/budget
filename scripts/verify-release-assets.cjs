@@ -58,7 +58,13 @@ function validateReleaseAssets(assetNames, contract) {
     `assets obrigatórios ausentes: ${missing.join(', ')}`
   );
 
+  // As arquiteturas são enviadas por jobs paralelos. Durante alguns segundos,
+  // a API pode mostrar um arquivo da outra arquitetura antes do respectivo
+  // par terminar de subir. Cada job valida somente a arquitetura pela qual é
+  // responsável; o outro job faz a verificação complementar.
+  const architectureMarker = `-${contract.arch}.AppImage`;
   for (const asset of assets) {
+    if (!asset.includes(architectureMarker)) continue;
     if (!asset.endsWith('.zsync')) continue;
     const appImage = asset.slice(0, -'.zsync'.length);
     assert.ok(

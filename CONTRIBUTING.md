@@ -17,8 +17,9 @@ Obrigado por querer melhorar o Budget.
 3. Na pasta `desktop`, execute `npm ci`, `npm test` e `npm run test:ui`.
 4. Inclua os três arquivos gerados — `app/budget.html`, `desktop/index.html` e
    `index.html` — quando mudar a interface ou a lógica da aplicação.
-5. Na raiz, execute `node scripts/verify-release-version.cjs` quando a mudança
-   puder afetar a versão distribuída.
+5. Se a mudança deve gerar um novo AppImage de teste, use uma versão inédita
+   com sufixo `-test.N` e execute `node scripts/verify-release-version.cjs`.
+   A CI recusa a reutilização de uma versão já associada a outro commit.
 6. Explique no pull request como a alteração foi testada.
 
 Não inclua boletos, faturas ou outros documentos reais no repositório ou nos testes.
@@ -45,7 +46,9 @@ com uma tela virtual; localmente ela precisa de uma sessão gráfica.
 
 Cada push para `main` ou `test` executa testes da aplicação, testes do
 Electron, auditoria de dependências, geração e validação do AppImage, SBOMs e
-CodeQL. Pull requests também recebem a revisão automática de dependências.
+CodeQL. Depois de um push validado em `test`, uma versão inédita `-test.N` é
+publicada automaticamente como pré-release atualizável. Pull requests também
+recebem a revisão automática de dependências.
 O Dependabot abre atualizações em `test`, para que dependências sigam o mesmo
 fluxo de validação das demais mudanças antes de uma promoção para `main`.
 Essas verificações complementam, mas não substituem, a conferência manual dos
