@@ -153,7 +153,117 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       # Exercita a regra que será aplicada novamente depois do upload da
       # release. Isto impede que um .zsync seja publicado sem o AppImage de
       # mesmo nome que o GithubUpdater do Gear Lever espera encontrar.
       - run: node --test scripts/test/*.test.cjs
+      - name: Garantir promoção do código testado
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Mudanças que não alteram o aplicativo, como documentação da CI,
+          # podem ser sincronizadas sem forçar uma nova versão.
+          if git diff --quiet "origin/$GITHUB_BASE_REF...$GITHUB_SHA" -- \
+               app desktop scripts/build-appimage.sh scripts/verify-test-appimage.sh; then
+            echo 'O aplicativo não mudou; contrato de promoção dispensado.'
+            exit 0
+          fi
+
+          stable_version="$(node -p "require('./desktop/package.json').version")"
+          node scripts/verify-release-version.cjs "v$stable_version" stable
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-releases.json
+          tested_tag="$(node scripts/verify-tested-prerelease.cjs \
+            "$stable_version" --tag-only < /tmp/budget-releases.json)"
+
+          # A identificação da versão muda na promoção, mas a implementação e
+          # as dependências precisam ser exatamente as exercitadas em test.
+          node scripts/verify-promoted-source.cjs "$tested_tag" "$GITHUB_SHA"
+
+  prepare-test-release:
+    name: Preparar pré-release de teste
+    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+    needs: [app, desktop, appimage, release-contract]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: budget-test-release
+      cancel-in-progress: false
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: release
+        name: Criar tag e pré-release quando necessário
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          printf '%s\n' 'publish=false' >> "$GITHUB_OUTPUT"
+
+          # Documentação e manutenção da própria CI não alteram o AppImage.
+          # Nesses casos, reutilizar a versão atual é correto e não deve
+          # disparar uma compilação cara nem uma release duplicada.
+          if [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] &&
+             git diff --quiet "$BEFORE_SHA" "$GITHUB_SHA" -- \
+               app desktop scripts/build-appimage.sh scripts/verify-test-appimage.sh; then
+            echo 'Nenhum arquivo distribuído mudou; pré-release dispensada.'
+            exit 0
+          fi
+
+          version="$(node -p "require('./desktop/package.json').version")"
+          case "$version" in
+            *-test.*) ;;
+            *)
+              echo 'Versão estável preparada em test; aguardando promoção manual para main.'
+              exit 0
+              ;;
+          esac
+
+          tag="v$version"
+          node scripts/verify-release-version.cjs "$tag" test
+
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            tag_commit="$(git rev-list -n 1 "$tag")"
+            test "$tag_commit" = "$GITHUB_SHA" || {
+              echo "ERRO: $tag já pertence a outro commit. Incremente a versão de teste."
+              exit 1
+            }
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git tag -a "$tag" -m "Pré-release $version" "$GITHUB_SHA"
+            git push origin "$tag"
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" |
+              node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const r=JSON.parse(s);if(!r.prerelease||r.draft||r.target_commitish!=='test')throw new Error('release existente não pertence ao canal test')})"
+          else
+            gh release create "$tag" --verify-tag --prerelease --target test \
+              --title "Budget $version — Teste" \
+              --notes 'Pré-release criada automaticamente depois da validação completa da branch test.'
+          fi
+
+          printf '%s\n' 'publish=true' "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  publish-test-release:
+    name: Publicar AppImage de teste
+    needs: prepare-test-release
+    if: needs.prepare-test-release.outputs.publish == 'true'
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    with:
+      release_tag: ${{ needs.prepare-test-release.outputs.tag }}
+      release_is_prerelease: "true"
+      release_target: test

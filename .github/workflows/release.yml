@@ -5,6 +5,22 @@ on:
     # Rascunhos não devem gerar artefatos. A publicação é o momento em que a
     # tag fica pública e o AppImage pode ser anexado à release correta.
     types: [published]
+  # A CI chama este mesmo processo depois de integrar uma versão inédita na
+  # branch test. Isso evita manter uma segunda receita de empacotamento.
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Tag já criada para a release
+        required: true
+        type: string
+      release_is_prerelease:
+        description: "true para o canal de testes; false para o estável"
+        required: true
+        type: string
+      release_target:
+        description: Branch de origem da release
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -25,15 +41,16 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
-      RELEASE_IS_PRERELEASE: ${{ github.event.release.prerelease }}
-      RELEASE_TARGET: ${{ github.event.release.target_commitish }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+      RELEASE_IS_PRERELEASE: ${{ inputs.release_is_prerelease || github.event.release.prerelease }}
+      RELEASE_TARGET: ${{ inputs.release_target || github.event.release.target_commitish }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # A release deve sempre ser construída a partir da tag publicada,
           # nunca a partir do estado posterior da branch padrão.
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ inputs.release_tag || github.event.release.tag_name }}
+          fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
@@ -61,6 +78,20 @@ jobs:
           }
 
           node scripts/verify-release-version.cjs "$RELEASE_TAG" "$release_channel"
+      - name: Exigir pré-release aprovada antes da versão estável
+        if: env.RELEASE_IS_PRERELEASE == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          budget_version="$(node -p "require('./desktop/package.json').version")"
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-releases.json
+          node scripts/verify-tested-prerelease.cjs \
+            "$budget_version" < /tmp/budget-releases.json
+          tested_tag="$(node scripts/verify-tested-prerelease.cjs \
+            "$budget_version" --tag-only < /tmp/budget-releases.json)"
+
+          node scripts/verify-promoted-source.cjs "$tested_tag" "$RELEASE_TAG"
       - name: Definir canal e origem de atualização
         run: |
           build_channel=stable

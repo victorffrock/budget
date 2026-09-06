@@ -100,8 +100,11 @@ O projeto mantém duas branches permanentes:
 
 Uma pré-release nunca substitui a versão estável indicada pelo Gear Lever. A
 promoção para `main` só acontece depois dos testes automatizados e da
-verificação manual da pré-release. O processo completo de publicação está em
-[docs/RELEASES.md](docs/RELEASES.md).
+verificação manual da pré-release. Ao integrar em `test` uma versão inédita
+com sufixo `-test.N`, a CI cria e publica automaticamente os AppImages de
+teste. Uma release estável é recusada se a pré-release correspondente não
+existir, não estiver completa ou contiver código distribuído diferente. O
+processo completo está em [docs/RELEASES.md](docs/RELEASES.md).
 
 ## Observações
 
