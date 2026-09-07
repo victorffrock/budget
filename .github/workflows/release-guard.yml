@@ -1,0 +1,26 @@
+name: Proteger canais de atualização
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  reject-manual-release:
+    name: Rejeitar release publicada fora da automação
+    runs-on: ubuntu-latest
+    steps:
+      # Releases concluídas pelos workflows oficiais usam GITHUB_TOKEN e não
+      # geram outro evento. Portanto, chegar aqui significa que uma release
+      # foi publicada manualmente e ficou visível antes da validação atômica.
+      - name: Remover release incompleta ou não autorizada
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ github.event.release.id }}
+        run: |
+          gh api --method DELETE \
+            "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"
+          echo 'ERRO: releases manuais são removidas para não interromper o Gear Lever. Use o workflow oficial.'
+          exit 1

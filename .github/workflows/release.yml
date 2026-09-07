@@ -1,22 +1,23 @@
 name: Publicar AppImage
 
 on:
-  release:
-    # Rascunhos não devem gerar artefatos. A publicação é o momento em que a
-    # tag fica pública e o AppImage pode ser anexado à release correta.
-    types: [published]
-  # A CI chama este mesmo processo depois de integrar uma versão inédita na
-  # branch test. Isso evita manter uma segunda receita de empacotamento.
+  # Somente os workflows controlados de teste e promoção estável podem chamar
+  # esta receita. A release permanece como rascunho até os dois AppImages e
+  # seus arquivos .zsync passarem pela validação final.
   workflow_call:
     inputs:
       release_tag:
         description: Tag já criada para a release
         required: true
         type: string
+      release_id:
+        description: ID imutável do rascunho no GitHub
+        required: true
+        type: string
       release_is_prerelease:
         description: "true para o canal de testes; false para o estável"
         required: true
-        type: string
+        type: boolean
       release_target:
         description: Branch de origem da release
         required: true
@@ -26,6 +27,10 @@ permissions:
   contents: write
   attestations: write
   id-token: write
+
+concurrency:
+  group: budget-release-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
 jobs:
   appimage:
@@ -41,15 +46,16 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
-      RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
-      RELEASE_IS_PRERELEASE: ${{ inputs.release_is_prerelease || github.event.release.prerelease }}
-      RELEASE_TARGET: ${{ inputs.release_target || github.event.release.target_commitish }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      RELEASE_IS_PRERELEASE: ${{ inputs.release_is_prerelease }}
+      RELEASE_TARGET: ${{ inputs.release_target }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # A release deve sempre ser construída a partir da tag publicada,
           # nunca a partir do estado posterior da branch padrão.
-          ref: ${{ inputs.release_tag || github.event.release.tag_name }}
+          ref: ${{ inputs.release_tag }}
           fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -91,7 +97,7 @@ jobs:
           tested_tag="$(node scripts/verify-tested-prerelease.cjs \
             "$budget_version" --tag-only < /tmp/budget-releases.json)"
 
-          node scripts/verify-promoted-source.cjs "$tested_tag" "$RELEASE_TAG"
+          node scripts/verify-promoted-source.cjs "$tested_tag" "$RELEASE_TAG" origin/test
       - name: Definir canal e origem de atualização
         run: |
           build_channel=stable
@@ -216,35 +222,130 @@ jobs:
               --channel "$BUDGET_BUILD_CHANNEL" \
               --arch "$BUDGET_APPIMAGE_ARCH" \
               --version "$budget_version"
-      - name: Atualizar canal contínuo de testes
+
+  finalize:
+    name: Validar e tornar a release visível
+    needs: appimage
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      RELEASE_IS_PRERELEASE: ${{ inputs.release_is_prerelease }}
+      RELEASE_TARGET: ${{ inputs.release_target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
+      - name: Confirmar rascunho e todos os assets obrigatórios
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$BUDGET_BUILD_CHANNEL" != "test" ]; then
-            echo "Release estável: canal contínuo de testes não será alterado."
-            exit 0
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            > /tmp/budget-release.json
+          budget_version="$(node -p "require('./desktop/package.json').version")"
+          release_channel=stable
+          if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
+            release_channel=test
           fi
 
-          # As duas arquiteturas executam em paralelo. Se a outra matriz criar
-          # a release entre a consulta e a criação, a confirmação abaixo ainda
-          # permite que ambas enviem seus arquivos independentes.
+          verified_id="$(node scripts/verify-github-release.cjs \
+            --tag "$RELEASE_TAG" \
+            --channel "$release_channel" \
+            --require-draft \
+            --field id \
+            < /tmp/budget-release.json)"
+          test "$verified_id" = "$RELEASE_ID"
+
+          for arch in x86_64 aarch64; do
+            node scripts/verify-github-release.cjs \
+              --tag "$RELEASE_TAG" \
+              --channel "$release_channel" \
+              --require-draft \
+              --field assets \
+              < /tmp/budget-release.json |
+              node scripts/verify-release-assets.cjs \
+                --channel "$release_channel" \
+                --arch "$arch" \
+                --version "$budget_version"
+          done
+      - name: Atualizar espelho contínuo do canal de testes
+        if: inputs.release_is_prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          artifact_dir="$(mktemp -d)"
+
+          download_asset() {
+            asset_name="$1"
+            asset_id="$(jq --arg name "$asset_name" -r \
+              '[.assets[] | select(.name == $name)][0].id // empty' \
+              /tmp/budget-release.json)"
+            test -n "$asset_id" || {
+              echo "ERRO: asset ausente no rascunho: $asset_name"
+              exit 1
+            }
+            gh api \
+              --header 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+              > "$artifact_dir/$asset_name"
+          }
+
+          for arch in x86_64 aarch64; do
+            download_asset "Budget-test-$arch.AppImage"
+            download_asset "Budget-test-$arch.AppImage.zsync"
+            download_asset "SBOM-app-$arch.cdx.json"
+            download_asset "SBOM-desktop-$arch.cdx.json"
+            download_asset "SHA256SUMS-$arch.txt"
+          done
+
           if ! gh release view test >/dev/null 2>&1; then
             gh release create test --prerelease --title "Budget — canal de testes" \
-              --notes "Canal contínuo de atualização para AppImages de teste." \
-              --target "$GITHUB_SHA" || gh release view test >/dev/null
+              --notes "Espelho contínuo para download manual dos AppImages de teste." \
+              --target test
           fi
 
           gh release upload test \
-            "desktop/dist/$BUDGET_APPIMAGE_FILENAME" \
-            "desktop/dist/$BUDGET_APPIMAGE_FILENAME.zsync" \
-            "desktop/dist/SBOM-app-$BUDGET_APPIMAGE_ARCH.cdx.json" \
-            "desktop/dist/SBOM-desktop-$BUDGET_APPIMAGE_ARCH.cdx.json" \
-            "desktop/dist/SHA256SUMS-$BUDGET_APPIMAGE_ARCH.txt" \
+            "$artifact_dir/Budget-test-x86_64.AppImage" \
+            "$artifact_dir/Budget-test-x86_64.AppImage.zsync" \
+            "$artifact_dir/Budget-test-aarch64.AppImage" \
+            "$artifact_dir/Budget-test-aarch64.AppImage.zsync" \
+            "$artifact_dir/SBOM-app-x86_64.cdx.json" \
+            "$artifact_dir/SBOM-desktop-x86_64.cdx.json" \
+            "$artifact_dir/SHA256SUMS-x86_64.txt" \
+            "$artifact_dir/SBOM-app-aarch64.cdx.json" \
+            "$artifact_dir/SBOM-desktop-aarch64.cdx.json" \
+            "$artifact_dir/SHA256SUMS-aarch64.txt" \
             --clobber
 
           budget_version="$(node -p "require('./desktop/package.json').version")"
-          gh release view test --json assets --jq '.assets[].name' |
-            node scripts/verify-release-assets.cjs \
-              --channel test \
-              --arch "$BUDGET_APPIMAGE_ARCH" \
-              --version "$budget_version"
+          for arch in x86_64 aarch64; do
+            gh release view test --json assets --jq '.assets[].name' |
+              node scripts/verify-release-assets.cjs \
+                --channel test \
+                --arch "$arch" \
+                --version "$budget_version"
+          done
+      - name: Publicar somente depois da validação completa
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -n \
+            --argjson prerelease "$RELEASE_IS_PRERELEASE" \
+            --arg target "$RELEASE_TARGET" \
+            '{draft:false, prerelease:$prerelease, target_commitish:$target}' \
+            > /tmp/budget-publish-release.json
+          gh api --method PATCH \
+            --input /tmp/budget-publish-release.json \
+            "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            > /tmp/budget-published-release.json
+          release_channel=stable
+          if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
+            release_channel=test
+          fi
+          release_state="$(node scripts/verify-github-release.cjs \
+            --tag "$RELEASE_TAG" --channel "$release_channel" --field state \
+            < /tmp/budget-published-release.json)"
+          test "$release_state" = published
