@@ -29,6 +29,7 @@ test('a branch test prepara uma pré-release somente depois dos jobs da CI', () 
 test('a receita de AppImage pode ser reutilizada pela publicação automática', () => {
   assert.match(release, /workflow_call:/);
   assert.match(release, /RELEASE_TAG: \$\{\{ inputs\.release_tag \}\}/);
+  assert.match(release, /RELEASE_ID: \$\{\{ inputs\.release_id \}\}/);
   assert.doesNotMatch(release, /^\s+release:\s*$/m);
 });
 
@@ -42,7 +43,8 @@ test('uma release só fica visível depois dos dois pares do Gear Lever', () => 
   assert.match(release, /finalize:/);
   assert.match(release, /needs: appimage/);
   assert.match(release, /for arch in x86_64 aarch64/);
-  assert.match(release, /--draft=false/);
+  assert.match(release, /\{draft:false, prerelease:\$prerelease/);
+  assert.match(release, /releases\/\$RELEASE_ID/);
   assert.match(ci, /gh release create "\$tag" --verify-tag --draft --prerelease/);
 });
 
@@ -63,6 +65,7 @@ test('a publicação estável possui uma única entrada manual controlada', () =
   assert.match(stable, /verify-tested-prerelease\.cjs/);
   assert.match(stable, /verify-promoted-source\.cjs/);
   assert.match(stable, /gh release create "\$tag" --verify-tag --draft --target main/);
+  assert.match(stable, /release_id: \$\{\{ needs\.prepare\.outputs\.release_id \}\}/);
   assert.match(stable, /uses: \.\/\.github\/workflows\/release\.yml/);
 });
 

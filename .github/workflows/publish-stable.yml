@@ -24,6 +24,7 @@ jobs:
     outputs:
       publish: ${{ steps.release.outputs.publish }}
       tag: ${{ steps.release.outputs.tag }}
+      release_id: ${{ steps.release.outputs.release_id }}
     steps:
       # A seleção de branch da interface não interfere na publicação: uma
       # versão estável sempre é lida diretamente da branch main protegida.
@@ -67,21 +68,22 @@ jobs:
             git push origin "$tag"
           fi
 
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
-              > /tmp/budget-stable-release.json
-            release_state="$(node -e '
-              const fs = require("node:fs");
-              const release = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-              if (release.prerelease || release.target_commitish !== "main") {
-                throw new Error("release existente não pertence ao canal estável");
-              }
-              process.stdout.write(release.draft ? "draft" : "published");
-            ' /tmp/budget-stable-release.json)"
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-stable-releases.json
+          release_id="$(jq --arg tag "$tag" -r \
+            '[.[] | select(.tag_name == $tag)][0].id // empty' \
+            /tmp/budget-stable-releases.json)"
+
+          if [ -n "$release_id" ]; then
+            release_state="$(node scripts/verify-github-release.cjs \
+              --tag "$tag" --channel stable --field state \
+              < /tmp/budget-stable-releases.json)"
 
             if [ "$release_state" = published ]; then
               for arch in x86_64 aarch64; do
-                gh release view "$tag" --json assets --jq '.assets[].name' |
+                node scripts/verify-github-release.cjs \
+                  --tag "$tag" --channel stable --field assets \
+                  < /tmp/budget-stable-releases.json |
                   node scripts/verify-release-assets.cjs \
                     --channel stable --arch "$arch" --version "$version"
               done
@@ -92,9 +94,15 @@ jobs:
             gh release create "$tag" --verify-tag --draft --target main \
               --title "Budget $version" \
               --notes 'Release estável automatizada após a promoção integral da versão aprovada em test.'
+
+            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              > /tmp/budget-stable-releases.json
+            release_id="$(node scripts/verify-github-release.cjs \
+              --tag "$tag" --channel stable --require-draft --field id \
+              < /tmp/budget-stable-releases.json)"
           fi
 
-          printf '%s\n' 'publish=true' "tag=$tag" >> "$GITHUB_OUTPUT"
+          printf '%s\n' 'publish=true' "tag=$tag" "release_id=$release_id" >> "$GITHUB_OUTPUT"
 
   publish:
     name: Montar e publicar versão estável
@@ -107,5 +115,6 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       release_tag: ${{ needs.prepare.outputs.tag }}
+      release_id: ${{ needs.prepare.outputs.release_id }}
       release_is_prerelease: false
       release_target: main
