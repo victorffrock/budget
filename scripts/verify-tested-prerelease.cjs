@@ -51,8 +51,7 @@ function findTestedPrerelease(releases, stableVersion) {
       for (const arch of TEST_ARCHITECTURES) {
         validateReleaseAssets(assetNames, {
           channel: 'test',
-          arch,
-          version: release.tag_name.slice(1)
+          arch
         });
       }
       return release;

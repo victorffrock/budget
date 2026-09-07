@@ -85,7 +85,7 @@ jobs:
                   --tag "$tag" --channel stable --field assets \
                   < /tmp/budget-stable-releases.json |
                   node scripts/verify-release-assets.cjs \
-                    --channel stable --arch "$arch" --version "$version"
+                    --channel stable --arch "$arch"
               done
               echo "$tag já está publicada e completa."
               exit 0
@@ -98,7 +98,7 @@ jobs:
                 tag_name:$tag,
                 target_commitish:"main",
                 name:$title,
-                body:"Release estável automatizada após a promoção integral da versão aprovada em test.",
+                body:"Release estável automatizada após a promoção integral da versão aprovada em test.\n\n### Qual arquivo baixar\n\n- **Intel/AMD 64 bits:** `Budget-x86_64.AppImage`\n- **ARM 64 bits:** `Budget-aarch64.AppImage`\n\nOs arquivos `.zsync` são usados automaticamente pelo Gear Lever. `SHA256SUMS` e `SBOM` servem para verificação e auditoria.",
                 draft:true,
                 prerelease:false
               }' > /tmp/budget-create-stable-release.json

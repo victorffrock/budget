@@ -17,6 +17,11 @@ const guard = fs.readFileSync(
   path.join(root, '.github', 'workflows', 'release-guard.yml'),
   'utf8'
 );
+const buildAppImage = fs.readFileSync(
+  path.join(root, 'scripts', 'build-appimage.sh'),
+  'utf8'
+);
+const desktopPackage = require(path.join(root, 'desktop', 'package.json'));
 
 test('a branch test prepara uma pré-release somente depois dos jobs da CI', () => {
   assert.match(ci, /prepare-test-release:/);
@@ -48,6 +53,17 @@ test('uma release só fica visível depois dos dois pares do Gear Lever', () => 
   assert.match(ci, /tag_name:\$tag/);
   assert.match(ci, /draft:true/);
   assert.match(ci, /prerelease:true/);
+});
+
+test('a release estável publica uma única identidade canônica por arquitetura', () => {
+  assert.match(release, /appimage_name="Budget-\$BUDGET_APPIMAGE_ARCH\.AppImage"/);
+  assert.match(release, /"desktop\/dist\/\$BUDGET_APPIMAGE_FILENAME\.zsync"/);
+  assert.doesNotMatch(release, /legacy_version/);
+  assert.doesNotMatch(release, /Budget-6\.1\.[34]-/);
+  assert.doesNotMatch(release, /desktop\/dist\/Budget-\*-\$BUDGET_APPIMAGE_ARCH/);
+  assert.match(buildAppImage, /APPIMAGE_ARTIFACT_NAME="Budget-\$\{APPIMAGE_ARCH\}\.\\\$\{ext\}"/);
+  assert.doesNotMatch(buildAppImage, /Budget-\\\$\{version\}-\$\{APPIMAGE_ARCH\}/);
+  assert.equal(desktopPackage.build.artifactName, 'Budget-x86_64.${ext}');
 });
 
 test('o canal test exige versão inédita e CodeQL antes de publicar', () => {

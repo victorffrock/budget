@@ -11,7 +11,7 @@
 # O alvo precisa corresponder à arquitetura da máquina que executa o script.
 # Os alvos suportados são x86_64 e aarch64. Quando omitido, ele é detectado.
 #
-# Resultado estável: desktop/dist/Budget-<versão>-<arquitetura>.AppImage.
+# Resultado estável: desktop/dist/Budget-<arquitetura>.AppImage.
 # Resultado de teste: desktop/dist/Budget-test-<arquitetura>.AppImage.
 # Com APPIMAGE_UPDATE_INFORMATION, também é gerado o respectivo .zsync.
 
@@ -100,7 +100,6 @@ fi
 cp -f "$HTML_SRC" ./index.html
 echo "==> HTML copiado para desktop/index.html ($(wc -c < index.html) bytes)"
 
-APP_VERSION="$(node -p "require('./package.json').version")"
 if [ "$BUILD_CHANNEL" = test ]; then
   APPIMAGE_ARTIFACT_NAME="Budget-test-${APPIMAGE_ARCH}.\${ext}"
   APPIMAGE="$(pwd)/dist/Budget-test-${APPIMAGE_ARCH}.AppImage"
@@ -117,8 +116,11 @@ if [ "$BUILD_CHANNEL" = test ]; then
     "--config.linux.executableName=budget-test" \
     "--config.linux.icon=assets/icon-test.png"
 else
-  APPIMAGE_ARTIFACT_NAME="Budget-\${version}-${APPIMAGE_ARCH}.\${ext}"
-  APPIMAGE="$(pwd)/dist/Budget-${APP_VERSION}-${APPIMAGE_ARCH}.AppImage"
+  # O artefato estável já nasce com o nome permanente usado pelo atualizador.
+  # Uma única identidade evita cópias, aliases e contratos divergentes entre
+  # o download manual e o Gear Lever.
+  APPIMAGE_ARTIFACT_NAME="Budget-${APPIMAGE_ARCH}.\${ext}"
+  APPIMAGE="$(pwd)/dist/Budget-${APPIMAGE_ARCH}.AppImage"
   set -- \
     "--$ELECTRON_ARCH" \
     "--config.artifactName=$APPIMAGE_ARTIFACT_NAME" \

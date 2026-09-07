@@ -53,6 +53,10 @@ CodeQL. O CodeQL da própria CI precisa terminar antes da publicação. Depois d
 um push validado em `test`, uma versão inédita `-test.N` é preparada como
 rascunho e só é publicada quando os artefatos das duas arquiteturas estão
 completos. Pull requests também recebem a revisão automática de dependências.
+O contrato de release permite exatamente um par AppImage/`.zsync` por
+arquitetura e rejeita nomes versionados, aliases ou qualquer artefato de
+atualização inesperado. Assim, o download manual e o Gear Lever consomem o
+mesmo binário canônico.
 O Dependabot abre atualizações em `test`, para que dependências sigam o mesmo
 fluxo de validação das demais mudanças antes de uma promoção para `main`.
 Essas verificações complementam, mas não substituem, a conferência manual dos

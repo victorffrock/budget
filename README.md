@@ -24,12 +24,12 @@ Intel/AMD 64 bits (`x86_64`) e ARM 64 bits (`aarch64`, como Raspberry Pi 4/5):
 
 ```sh
 # Intel/AMD 64 bits
-chmod +x Budget-*-x86_64.AppImage
-./Budget-*-x86_64.AppImage
+chmod +x Budget-x86_64.AppImage
+./Budget-x86_64.AppImage
 
 # ARM 64 bits
-chmod +x Budget-*-aarch64.AppImage
-./Budget-*-aarch64.AppImage
+chmod +x Budget-aarch64.AppImage
+./Budget-aarch64.AppImage
 ```
 
 O AppImage usa runtime estático e não requer FUSE.
@@ -50,7 +50,7 @@ possível confirmar que o AppImage foi produzido pelo workflow oficial do
 repositório. Com o [GitHub CLI](https://cli.github.com/), use:
 
 ```sh
-gh attestation verify Budget-*-aarch64.AppImage \
+gh attestation verify Budget-aarch64.AppImage \
   --repo victorffrock/budget
 ```
 
@@ -83,10 +83,13 @@ arquivos `.zsync`, checksums e SBOMs foram gerados e conferidos. Se uma
 compilação falhar, ela permanece como rascunho e o Gear Lever continua usando
 a última versão completa.
 
-As instalações estáveis 6.1.3 e 6.1.4 recebem uma ponte automática para o
-canal atual. Versões ainda mais antigas ou arquivos que foram integrados com
-uma origem personalizada podem exigir uma reinstalação manual única; depois
-dela, as atualizações voltam a ser automáticas.
+Cada release estável publica somente um par de atualização por arquitetura:
+`Budget-x86_64.AppImage`/`.zsync` e `Budget-aarch64.AppImage`/`.zsync`. O nome
+permanece igual entre as versões, enquanto a versão real fica registrada nos
+metadados do aplicativo, na tag e no título da release. Essa identidade única
+evita downloads duplicados e fontes divergentes no Gear Lever. Arquivos que
+tenham sido integrados manualmente com uma origem personalizada podem exigir
+uma reinstalação única para voltar ao canal oficial.
 
 As versões de teste também podem ser integradas no Gear Lever. Elas usam um
 canal separado: recebem apenas novos testes e nunca substituem a instalação
