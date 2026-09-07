@@ -91,15 +91,24 @@ jobs:
               exit 0
             fi
           else
-            gh release create "$tag" --verify-tag --draft --target main \
-              --title "Budget $version" \
-              --notes 'Release estável automatizada após a promoção integral da versão aprovada em test.'
-
-            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
-              > /tmp/budget-stable-releases.json
+            jq -n \
+              --arg tag "$tag" \
+              --arg title "Budget $version" \
+              '{
+                tag_name:$tag,
+                target_commitish:"main",
+                name:$title,
+                body:"Release estável automatizada após a promoção integral da versão aprovada em test.",
+                draft:true,
+                prerelease:false
+              }' > /tmp/budget-create-stable-release.json
+            gh api --method POST \
+              --input /tmp/budget-create-stable-release.json \
+              "repos/$GITHUB_REPOSITORY/releases" \
+              > /tmp/budget-created-stable-release.json
             release_id="$(node scripts/verify-github-release.cjs \
               --tag "$tag" --channel stable --require-draft --field id \
-              < /tmp/budget-stable-releases.json)"
+              < /tmp/budget-created-stable-release.json)"
           fi
 
           printf '%s\n' 'publish=true' "tag=$tag" "release_id=$release_id" >> "$GITHUB_OUTPUT"
