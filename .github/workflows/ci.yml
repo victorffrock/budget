@@ -235,6 +235,7 @@ jobs:
     outputs:
       publish: ${{ steps.release.outputs.publish }}
       tag: ${{ steps.release.outputs.tag }}
+      release_id: ${{ steps.release.outputs.release_id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -280,21 +281,22 @@ jobs:
             git push origin "$tag"
           fi
 
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
-              > /tmp/budget-test-release.json
-            release_state="$(node -e '
-              const fs = require("node:fs");
-              const release = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-              if (!release.prerelease || release.target_commitish !== "test") {
-                throw new Error("release existente não pertence ao canal test");
-              }
-              process.stdout.write(release.draft ? "draft" : "published");
-            ' /tmp/budget-test-release.json)"
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-test-releases.json
+          release_id="$(jq --arg tag "$tag" -r \
+            '[.[] | select(.tag_name == $tag)][0].id // empty' \
+            /tmp/budget-test-releases.json)"
+
+          if [ -n "$release_id" ]; then
+            release_state="$(node scripts/verify-github-release.cjs \
+              --tag "$tag" --channel test --field state \
+              < /tmp/budget-test-releases.json)"
 
             if [ "$release_state" = published ]; then
               for arch in x86_64 aarch64; do
-                gh release view "$tag" --json assets --jq '.assets[].name' |
+                node scripts/verify-github-release.cjs \
+                  --tag "$tag" --channel test --field assets \
+                  < /tmp/budget-test-releases.json |
                   node scripts/verify-release-assets.cjs \
                     --channel test --arch "$arch" --version "$version"
               done
@@ -305,9 +307,15 @@ jobs:
             gh release create "$tag" --verify-tag --draft --prerelease --target test \
               --title "Budget $version — Teste" \
               --notes 'Pré-release automatizada. Permanece invisível até os AppImages x86_64 e aarch64 passarem pela validação completa.'
+
+            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              > /tmp/budget-test-releases.json
+            release_id="$(node scripts/verify-github-release.cjs \
+              --tag "$tag" --channel test --require-draft --field id \
+              < /tmp/budget-test-releases.json)"
           fi
 
-          printf '%s\n' 'publish=true' "tag=$tag" >> "$GITHUB_OUTPUT"
+          printf '%s\n' 'publish=true' "tag=$tag" "release_id=$release_id" >> "$GITHUB_OUTPUT"
 
   publish-test-release:
     name: Publicar AppImage de teste
@@ -320,5 +328,6 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       release_tag: ${{ needs.prepare-test-release.outputs.tag }}
+      release_id: ${{ needs.prepare-test-release.outputs.release_id }}
       release_is_prerelease: true
       release_target: test

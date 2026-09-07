@@ -10,6 +10,10 @@ on:
         description: Tag já criada para a release
         required: true
         type: string
+      release_id:
+        description: ID imutável do rascunho no GitHub
+        required: true
+        type: string
       release_is_prerelease:
         description: "true para o canal de testes; false para o estável"
         required: true
@@ -43,6 +47,7 @@ jobs:
     env:
       BUDGET_APPIMAGE_ARCH: ${{ matrix.appimage_arch }}
       RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_ID: ${{ inputs.release_id }}
       RELEASE_IS_PRERELEASE: ${{ inputs.release_is_prerelease }}
       RELEASE_TARGET: ${{ inputs.release_target }}
     steps:
@@ -224,6 +229,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_ID: ${{ inputs.release_id }}
       RELEASE_IS_PRERELEASE: ${{ inputs.release_is_prerelease }}
       RELEASE_TARGET: ${{ inputs.release_target }}
     steps:
@@ -235,25 +241,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
             > /tmp/budget-release.json
-          node -e '
-            const fs = require("node:fs");
-            const release = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-            const expectedPrerelease = process.argv[2] === "true";
-            if (!release.draft) throw new Error("a release precisa permanecer como rascunho até a validação final");
-            if (release.prerelease !== expectedPrerelease) throw new Error("o tipo da release não corresponde ao canal");
-            if (release.target_commitish !== process.argv[3]) throw new Error("a release aponta para a branch incorreta");
-          ' /tmp/budget-release.json "$RELEASE_IS_PRERELEASE" "$RELEASE_TARGET"
-
           budget_version="$(node -p "require('./desktop/package.json').version")"
           release_channel=stable
           if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
             release_channel=test
           fi
 
+          verified_id="$(node scripts/verify-github-release.cjs \
+            --tag "$RELEASE_TAG" \
+            --channel "$release_channel" \
+            --require-draft \
+            --field id \
+            < /tmp/budget-release.json)"
+          test "$verified_id" = "$RELEASE_ID"
+
           for arch in x86_64 aarch64; do
-            gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' |
+            node scripts/verify-github-release.cjs \
+              --tag "$RELEASE_TAG" \
+              --channel "$release_channel" \
+              --require-draft \
+              --field assets \
+              < /tmp/budget-release.json |
               node scripts/verify-release-assets.cjs \
                 --channel "$release_channel" \
                 --arch "$arch" \
@@ -265,7 +275,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           artifact_dir="$(mktemp -d)"
-          gh release download "$RELEASE_TAG" --dir "$artifact_dir"
+
+          download_asset() {
+            asset_name="$1"
+            asset_id="$(jq --arg name "$asset_name" -r \
+              '[.assets[] | select(.name == $name)][0].id // empty' \
+              /tmp/budget-release.json)"
+            test -n "$asset_id" || {
+              echo "ERRO: asset ausente no rascunho: $asset_name"
+              exit 1
+            }
+            gh api \
+              --header 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+              > "$artifact_dir/$asset_name"
+          }
+
+          for arch in x86_64 aarch64; do
+            download_asset "Budget-test-$arch.AppImage"
+            download_asset "Budget-test-$arch.AppImage.zsync"
+            download_asset "SBOM-app-$arch.cdx.json"
+            download_asset "SBOM-desktop-$arch.cdx.json"
+            download_asset "SHA256SUMS-$arch.txt"
+          done
 
           if ! gh release view test >/dev/null 2>&1; then
             gh release create test --prerelease --title "Budget — canal de testes" \
@@ -298,16 +330,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release edit "$RELEASE_TAG" \
-            --draft=false \
-            --prerelease="$RELEASE_IS_PRERELEASE" \
-            --target "$RELEASE_TARGET"
+          jq -n \
+            --argjson prerelease "$RELEASE_IS_PRERELEASE" \
+            --arg target "$RELEASE_TARGET" \
+            '{draft:false, prerelease:$prerelease, target_commitish:$target}' \
+            > /tmp/budget-publish-release.json
+          gh api --method PATCH \
+            --input /tmp/budget-publish-release.json \
+            "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" >/dev/null
 
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
             > /tmp/budget-published-release.json
-          node -e '
-            const fs = require("node:fs");
-            const release = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-            if (release.draft) throw new Error("a release continuou como rascunho");
-            if (release.prerelease !== (process.argv[2] === "true")) throw new Error("canal publicado incorretamente");
-          ' /tmp/budget-published-release.json "$RELEASE_IS_PRERELEASE"
+          release_channel=stable
+          if [ "$RELEASE_IS_PRERELEASE" = "true" ]; then
+            release_channel=test
+          fi
+          release_state="$(node scripts/verify-github-release.cjs \
+            --tag "$RELEASE_TAG" --channel "$release_channel" --field state \
+            < /tmp/budget-published-release.json)"
+          test "$release_state" = published
