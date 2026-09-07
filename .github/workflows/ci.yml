@@ -304,15 +304,24 @@ jobs:
               exit 0
             fi
           else
-            gh release create "$tag" --verify-tag --draft --prerelease --target test \
-              --title "Budget $version — Teste" \
-              --notes 'Pré-release automatizada. Permanece invisível até os AppImages x86_64 e aarch64 passarem pela validação completa.'
-
-            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
-              > /tmp/budget-test-releases.json
+            jq -n \
+              --arg tag "$tag" \
+              --arg title "Budget $version — Teste" \
+              '{
+                tag_name:$tag,
+                target_commitish:"test",
+                name:$title,
+                body:"Pré-release automatizada. Permanece invisível até os AppImages x86_64 e aarch64 passarem pela validação completa.",
+                draft:true,
+                prerelease:true
+              }' > /tmp/budget-create-test-release.json
+            gh api --method POST \
+              --input /tmp/budget-create-test-release.json \
+              "repos/$GITHUB_REPOSITORY/releases" \
+              > /tmp/budget-created-test-release.json
             release_id="$(node scripts/verify-github-release.cjs \
               --tag "$tag" --channel test --require-draft --field id \
-              < /tmp/budget-test-releases.json)"
+              < /tmp/budget-created-test-release.json)"
           fi
 
           printf '%s\n' 'publish=true' "tag=$tag" "release_id=$release_id" >> "$GITHUB_OUTPUT"

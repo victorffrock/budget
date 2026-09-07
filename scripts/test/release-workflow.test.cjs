@@ -45,7 +45,9 @@ test('uma release só fica visível depois dos dois pares do Gear Lever', () => 
   assert.match(release, /for arch in x86_64 aarch64/);
   assert.match(release, /\{draft:false, prerelease:\$prerelease/);
   assert.match(release, /releases\/\$RELEASE_ID/);
-  assert.match(ci, /gh release create "\$tag" --verify-tag --draft --prerelease/);
+  assert.match(ci, /tag_name:\$tag/);
+  assert.match(ci, /draft:true/);
+  assert.match(ci, /prerelease:true/);
 });
 
 test('o canal test exige versão inédita e CodeQL antes de publicar', () => {
@@ -64,7 +66,8 @@ test('a publicação estável possui uma única entrada manual controlada', () =
   assert.match(stable, /ref: main/);
   assert.match(stable, /verify-tested-prerelease\.cjs/);
   assert.match(stable, /verify-promoted-source\.cjs/);
-  assert.match(stable, /gh release create "\$tag" --verify-tag --draft --target main/);
+  assert.match(stable, /target_commitish:"main"/);
+  assert.match(stable, /prerelease:false/);
   assert.match(stable, /release_id: \$\{\{ needs\.prepare\.outputs\.release_id \}\}/);
   assert.match(stable, /uses: \.\/\.github\/workflows\/release\.yml/);
 });
