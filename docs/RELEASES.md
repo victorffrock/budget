@@ -21,6 +21,10 @@ request para integrar mudanças em `test` ou promover `test` para `main`.
 A integração exige que as validações obrigatórias estejam aprovadas. Não publique uma versão
 estável diretamente a partir de uma branch de trabalho.
 
+O contrato da CI compara a árvore completa de qualquer pull request destinada
+a `main` com a ponta atual de `test`. Portanto, nenhuma mudança — nem mesmo de
+documentação ou automação — pode estrear diretamente na branch estável.
+
 ## Antes de criar uma release
 
 1. Confirme que `app/package.json` e `desktop/package.json` usam a mesma
@@ -49,8 +53,9 @@ estável diretamente a partir de uma branch de trabalho.
    os jobs de CI e CodeQL no GitHub. A CI também valida os SBOMs e o AppImage.
 
    A CI geral é executada em pushes para `main` e `test` e em pull requests.
-   Quando uma nova versão de teste passa por todos os jobs, a própria CI cria
-   a tag, a pré-release e chama o workflow `Publicar AppImage`.
+   Quando uma nova versão de teste passa por todos os jobs, incluindo o CodeQL
+   ligado diretamente à publicação, a própria CI cria a tag, prepara uma
+   pré-release em rascunho e chama o workflow `Publicar AppImage`.
 
 ## Pré-release
 
@@ -60,14 +65,19 @@ os testes passarem, a CI executa automaticamente e nesta ordem:
 
 1. confirma que a versão e os HTMLs gerados estão sincronizados;
 2. cria uma tag anotada no commit validado;
-3. cria a release marcada como **Pre-release** e apontada para `test`;
+3. cria um rascunho marcado como **Pre-release** e apontado para `test`;
 4. chama o workflow `Publicar AppImage` para as duas arquiteturas;
-5. valida os arquivos reais anexados à release.
+5. valida juntos os arquivos reais das duas arquiteturas;
+6. somente então torna a pré-release visível ao GitHub e ao Gear Lever.
 
-Não crie manualmente a tag nem a pré-release no fluxo normal. Se uma tag da
+Não crie manualmente a tag nem a pré-release. Se uma tag da
 mesma versão já apontar para outro commit, a publicação falha de forma
 explícita: incremente o número `test.N` no pull request. Mudanças somente em
-documentação ou na própria CI não geram um AppImage duplicado.
+documentação não geram um AppImage duplicado. Mudanças na CI de publicação são
+consideradas distribuídas e exigem uma nova pré-release para que o processo
+seja exercitado de ponta a ponta.
+Tags de versão no padrão `v*` são protegidas contra movimentação e exclusão.
+Uma versão publicada é imutável; qualquer correção recebe outra versão.
 
 O workflow anexa automaticamente:
 
@@ -86,10 +96,11 @@ Baixe o AppImage da pré-release e teste o fluxo que mudou antes de promover a
 versão.
 
 O workflow valida que a tag, a versão e a branch de destino são compatíveis
-com o canal de testes. Depois do upload, cada job consulta somente os assets
-da arquitetura sob sua responsabilidade. Isso evita uma condição de corrida
-durante os uploads paralelos e ainda falha se faltar algum par
-AppImage/`.zsync` necessário ao Gear Lever.
+com o canal de testes. Durante o upload, cada job consulta somente os assets
+da arquitetura sob sua responsabilidade, evitando condições de corrida. Um
+job final confere novamente os dois pares AppImage/`.zsync` no mesmo rascunho.
+Se qualquer etapa falhar, o rascunho continua invisível e a versão anterior
+permanece como origem válida para o Gear Lever.
 
 Além dos arquivos da pré-release versionada, o workflow atualiza a pré-release
 contínua de tag `test`, que serve como endereço fixo para download manual. O
@@ -110,28 +121,24 @@ e espere a CI passar. Assim, por exemplo, `6.0.0-test.1` se torna `6.0.0` antes
 da publicação.
 
 Promova então esse commit final de `test` para `main` por uma pull request no
-GitHub. Confira se ela contém apenas os commits esperados, espere as
-validações obrigatórias e escolha **Rebase and merge** (ou outro método linear
-equivalente disponível no repositório). A proteção de branch impede o push
-direto para `main`.
+GitHub. A CI exige que a árvore completa da pull request seja idêntica à ponta
+atual de `test`. Espere as validações obrigatórias e escolha **Rebase and
+merge**. A proteção de branch impede o push direto e mantém o histórico linear.
 
-Crie então uma tag estável com a mesma versão distribuída e publique uma
-release sem a marca **Pre-release**. Pelo GitHub, abra **Releases → Draft a
-new release**, informe uma tag nova como `v6.0.0`, mantenha `main` como alvo e
-clique em **Publish release**. O GitHub cria a tag apontando para o commit de
-`main` ao publicar a release.
+Depois da integração, abra **Actions → Promover release estável → Run
+workflow**, informe a versão sem `v` — por exemplo, `6.2.0` — e confirme. Esse
+é o único caminho normal de publicação estável. O workflow sempre lê `main`,
+exige a pré-release aprovada, cria a tag e mantém a release em rascunho enquanto
+as duas arquiteturas são construídas. A release só se torna pública depois da
+validação conjunta.
 
-Como alternativa, a tag pode ser criada e enviada pelo terminal antes de abrir
-a página de releases:
+Uma release publicada manualmente pela interface é removida automaticamente:
+ela poderia ficar incompleta e ser selecionada pelo Gear Lever antes do fim da
+compilação. A tag não é reutilizada; corrija a causa e incremente a versão.
 
-```sh
-git tag -a v6.0.0 -m "Release 6.0.0"
-git push origin v6.0.0
-```
-
-O workflow de release só deve ser considerado concluído quando todos os
-arquivos acima estiverem anexados, houver uma atestação para cada AppImage e
-cada arquitetura puder ser verificada com `sha256sum`.
+O workflow de promoção só é concluído quando todos os arquivos acima estão
+anexados, há uma atestação para cada AppImage e cada arquitetura passou pelo
+contrato de atualização. Até esse momento, a release permanece em rascunho.
 
 O workflow aceita uma release estável somente quando a tag aponta para `main`,
 com uma versão sem sufixo de pré-release. Antes de gerar qualquer AppImage, ele

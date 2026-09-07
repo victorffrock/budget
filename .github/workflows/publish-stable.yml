@@ -1,0 +1,129 @@
+name: Promover release estável
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Versão estável presente em main, sem o prefixo v
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: budget-stable-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validar promoção e preparar rascunho
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
+      tag: ${{ steps.release.outputs.tag }}
+      release_id: ${{ steps.release.outputs.release_id }}
+    steps:
+      # A seleção de branch da interface não interfere na publicação: uma
+      # versão estável sempre é lida diretamente da branch main protegida.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - id: release
+        name: Exigir pré-release aprovada e criar rascunho
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          printf '%s\n' 'publish=false' >> "$GITHUB_OUTPUT"
+
+          version="$(node -p "require('./desktop/package.json').version")"
+          main_commit="$(git rev-parse HEAD)"
+          test "$REQUESTED_VERSION" = "$version" || {
+            echo "ERRO: main contém $version, não $REQUESTED_VERSION."
+            exit 1
+          }
+
+          tag="v$version"
+          node scripts/verify-release-version.cjs "$tag" stable
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-releases.json
+          tested_tag="$(node scripts/verify-tested-prerelease.cjs \
+            "$version" --tag-only < /tmp/budget-releases.json)"
+          node scripts/verify-promoted-source.cjs "$tested_tag" "$main_commit" origin/test
+
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            tag_commit="$(git rev-list -n 1 "$tag")"
+            test "$tag_commit" = "$main_commit" || {
+              echo "ERRO: $tag não aponta para o commit atual de main."
+              exit 1
+            }
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git tag -a "$tag" -m "Release $version" "$main_commit"
+            git push origin "$tag"
+          fi
+
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-stable-releases.json
+          release_id="$(jq --arg tag "$tag" -r \
+            '[.[] | select(.tag_name == $tag)][0].id // empty' \
+            /tmp/budget-stable-releases.json)"
+
+          if [ -n "$release_id" ]; then
+            release_state="$(node scripts/verify-github-release.cjs \
+              --tag "$tag" --channel stable --field state \
+              < /tmp/budget-stable-releases.json)"
+
+            if [ "$release_state" = published ]; then
+              for arch in x86_64 aarch64; do
+                node scripts/verify-github-release.cjs \
+                  --tag "$tag" --channel stable --field assets \
+                  < /tmp/budget-stable-releases.json |
+                  node scripts/verify-release-assets.cjs \
+                    --channel stable --arch "$arch" --version "$version"
+              done
+              echo "$tag já está publicada e completa."
+              exit 0
+            fi
+          else
+            jq -n \
+              --arg tag "$tag" \
+              --arg title "Budget $version" \
+              '{
+                tag_name:$tag,
+                target_commitish:"main",
+                name:$title,
+                body:"Release estável automatizada após a promoção integral da versão aprovada em test.",
+                draft:true,
+                prerelease:false
+              }' > /tmp/budget-create-stable-release.json
+            gh api --method POST \
+              --input /tmp/budget-create-stable-release.json \
+              "repos/$GITHUB_REPOSITORY/releases" \
+              > /tmp/budget-created-stable-release.json
+            release_id="$(node scripts/verify-github-release.cjs \
+              --tag "$tag" --channel stable --require-draft --field id \
+              < /tmp/budget-created-stable-release.json)"
+          fi
+
+          printf '%s\n' 'publish=true' "tag=$tag" "release_id=$release_id" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Montar e publicar versão estável
+    needs: prepare
+    if: needs.prepare.outputs.publish == 'true'
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.tag }}
+      release_id: ${{ needs.prepare.outputs.release_id }}
+      release_is_prerelease: false
+      release_target: main
