@@ -136,9 +136,10 @@ Uma release publicada manualmente pela interface é removida automaticamente:
 ela poderia ficar incompleta e ser selecionada pelo Gear Lever antes do fim da
 compilação. A tag não é reutilizada; corrija a causa e incremente a versão.
 
-O workflow de promoção só é concluído quando todos os arquivos acima estão
-anexados, há uma atestação para cada AppImage e cada arquitetura passou pelo
-contrato de atualização. Até esse momento, a release permanece em rascunho.
+O workflow de promoção só é concluído quando todos os arquivos obrigatórios
+estão anexados, há uma atestação para cada AppImage e cada arquitetura passou
+pelo contrato de atualização. Até esse momento, a release permanece em
+rascunho.
 
 O workflow aceita uma release estável somente quando a tag aponta para `main`,
 com uma versão sem sufixo de pré-release. Antes de gerar qualquer AppImage, ele
@@ -146,17 +147,18 @@ exige uma pré-release completa `vX.Y.Z-test.N`, publicada a partir de `test`,
 com os pares x86_64 e aarch64. Também compara o código distribuído e recusa a
 promoção se ele não for o mesmo que foi testado; somente os arquivos de versão
 e os HTMLs gerados podem mudar. Depois do upload, valida os nomes fixos do canal
-estável e os pares de compatibilidade usados pelo Gear Lever para migrar
-instalações 6.1.3 e 6.1.4.
+estável e recusa qualquer segunda identidade da mesma arquitetura.
 
 AppImages estáveis não recebem a marca **TESTE** e continuam apontando para o
-canal `latest`. Cada release também anexa um par de arquivos de nome fixo,
-`Budget-x86_64.AppImage`/`.zsync` e `Budget-aarch64.AppImage`/`.zsync`, usado
-exclusivamente como origem de atualização. Os arquivos versionados continuam
-disponíveis para download manual. Essa referência fixa permite ao Gear Lever
-encontrar a versão mais recente mesmo que o nome do AppImage distribuído mude.
-Assim, a promoção do código para `main` remove a identificação de
-desenvolvimento automaticamente no próximo build estável.
+canal `latest`. Cada release contém exatamente um AppImage e um `.zsync` por
+arquitetura: `Budget-x86_64.AppImage`/`.zsync` e
+`Budget-aarch64.AppImage`/`.zsync`. Esses mesmos arquivos atendem ao download
+manual e ao Gear Lever. O contrato automatizado recusa aliases legados,
+arquivos versionados duplicados, um `.zsync` sem o AppImage correspondente ou
+qualquer segunda identidade da mesma arquitetura. A versão permanece
+registrada na tag, no título da release e dentro do aplicativo. Assim, a
+promoção para `main` remove a identificação de desenvolvimento automaticamente
+no build estável sem multiplicar artefatos.
 
 ## Correção de emergência
 

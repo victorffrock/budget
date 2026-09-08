@@ -10,7 +10,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-const LEGACY_STABLE_VERSIONS = Object.freeze(['6.1.3', '6.1.4']);
 const SUPPORTED_ARCHITECTURES = Object.freeze(['x86_64', 'aarch64']);
 
 function getOption(args, name) {
@@ -18,44 +17,61 @@ function getOption(args, name) {
   return index === -1 ? undefined : args[index + 1];
 }
 
-function assertContractInput({ channel, arch, version }) {
+function assertContractInput({ channel, arch }) {
   assert.ok(['stable', 'test'].includes(channel), 'canal inválido');
   assert.ok(SUPPORTED_ARCHITECTURES.includes(arch), 'arquitetura inválida');
-  assert.match(version, /^\d+\.\d+\.\d+(?:-test\.\d+)?$/, 'versão inválida');
 }
 
-function getExpectedUpdaterAssets({ channel, arch, version }) {
-  assertContractInput({ channel, arch, version });
+function getExpectedUpdaterAssets({ channel, arch }) {
+  assertContractInput({ channel, arch });
 
   if (channel === 'test') {
     return [`Budget-test-${arch}.AppImage`, `Budget-test-${arch}.AppImage.zsync`];
   }
 
-  const versioned = `Budget-${version}-${arch}.AppImage`;
   const canonical = `Budget-${arch}.AppImage`;
-  const legacy = LEGACY_STABLE_VERSIONS.flatMap((legacyVersion) => {
-    const file = `Budget-${legacyVersion}-${arch}.AppImage`;
-    return [file, `${file}.zsync`];
-  });
+  return [canonical, `${canonical}.zsync`];
+}
 
+function getExpectedReleaseAssets(contract) {
+  const { arch } = contract;
   return [
-    versioned,
-    `${versioned}.zsync`,
-    canonical,
-    `${canonical}.zsync`,
-    ...legacy
+    ...getExpectedUpdaterAssets(contract),
+    `SBOM-app-${arch}.cdx.json`,
+    `SBOM-desktop-${arch}.cdx.json`,
+    `SHA256SUMS-${arch}.txt`
   ];
 }
 
 function validateReleaseAssets(assetNames, contract) {
   const assets = new Set(assetNames.filter(Boolean));
-  const expected = getExpectedUpdaterAssets(contract);
+  const expectedUpdater = getExpectedUpdaterAssets(contract);
+  const expected = getExpectedReleaseAssets(contract);
   const missing = expected.filter((name) => !assets.has(name));
 
   assert.deepEqual(
     missing,
     [],
     `assets obrigatórios ausentes: ${missing.join(', ')}`
+  );
+
+  // Uma release deve expor exatamente uma identidade de atualização por
+  // arquitetura. Nomes versionados ou aliases voltariam a poluir a página e
+  // poderiam criar fontes divergentes no Gear Lever.
+  const architectureSuffixes = [
+    `-${contract.arch}.AppImage`,
+    `-${contract.arch}.AppImage.zsync`
+  ];
+  const unexpected = [...assets].filter((name) => (
+    name.startsWith('Budget-') &&
+    architectureSuffixes.some((suffix) => name.endsWith(suffix)) &&
+    !expectedUpdater.includes(name)
+  ));
+
+  assert.deepEqual(
+    unexpected,
+    [],
+    `assets de atualização inesperados: ${unexpected.join(', ')}`
   );
 
   // As arquiteturas são enviadas por jobs paralelos. Durante alguns segundos,
@@ -87,8 +103,7 @@ function main() {
   const args = process.argv.slice(2);
   const contract = {
     channel: getOption(args, '--channel'),
-    arch: getOption(args, '--arch'),
-    version: getOption(args, '--version')
+    arch: getOption(args, '--arch')
   };
 
   try {
@@ -103,7 +118,7 @@ function main() {
 if (require.main === module) main();
 
 module.exports = {
-  LEGACY_STABLE_VERSIONS,
+  getExpectedReleaseAssets,
   getExpectedUpdaterAssets,
   validateReleaseAssets
 };
