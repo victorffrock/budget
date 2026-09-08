@@ -2,6 +2,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { findTestedPrerelease } = require('../verify-tested-prerelease.cjs');
+const { getExpectedReleaseAssets } = require('../verify-release-assets.cjs');
+
+function makeAssets() {
+  return ['x86_64', 'aarch64'].flatMap((arch) => (
+    getExpectedReleaseAssets({ channel: 'test', arch })
+      .map((name) => ({ name }))
+  ));
+}
 
 function makeRelease(overrides = {}) {
   return {
@@ -9,12 +17,7 @@ function makeRelease(overrides = {}) {
     target_commitish: 'test',
     prerelease: true,
     draft: false,
-    assets: [
-      { name: 'Budget-test-x86_64.AppImage' },
-      { name: 'Budget-test-x86_64.AppImage.zsync' },
-      { name: 'Budget-test-aarch64.AppImage' },
-      { name: 'Budget-test-aarch64.AppImage.zsync' }
-    ],
+    assets: makeAssets(),
     ...overrides
   };
 }
@@ -42,11 +45,9 @@ test('recusa pré-release criada fora da branch test', () => {
 
 test('recusa pré-release sem o par de atualização ARM', () => {
   const release = makeRelease({
-    assets: [
-      { name: 'Budget-test-x86_64.AppImage' },
-      { name: 'Budget-test-x86_64.AppImage.zsync' },
-      { name: 'Budget-test-aarch64.AppImage' }
-    ]
+    assets: makeAssets().filter((asset) => (
+      asset.name !== 'Budget-test-aarch64.AppImage.zsync'
+    ))
   });
 
   assert.throws(
