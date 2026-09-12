@@ -46,9 +46,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      - run: npm ci
-      # No Electron 43 o pacote pode baixar o runtime apenas na primeira
-      # execução do binário. Fazemos isso antes de ajustar o helper do sandbox.
+      - run: npm ci --ignore-scripts
+      # Executa somente o instalador necessário e revisado do Electron; scripts
+      # de instalação das demais dependências permanecem bloqueados na CI.
       - name: Baixar runtime do Electron
         run: node node_modules/electron/install.js
       # O runner não preserva as permissões SUID do binário baixado pelo npm.
@@ -71,13 +71,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Inicializar CodeQL
-        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           languages: javascript-typescript
           build-mode: none
           queries: security-extended
       - name: Analisar antes de publicar
-        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
 
   appimage:
     name: AppImage atualizável (${{ matrix.appimage_arch }})
@@ -142,7 +142,9 @@ jobs:
           git diff --exit-code -- budget.html ../index.html
       - name: Instalar dependências do desktop
         working-directory: desktop
-        run: npm ci
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/electron/install.js
       - name: Validar SBOMs
         run: |
           npm --prefix app sbom --sbom-format=cyclonedx --package-lock-only > /tmp/budget-app.sbom.cdx.json

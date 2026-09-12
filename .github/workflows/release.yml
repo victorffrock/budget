@@ -135,7 +135,9 @@ jobs:
           git diff --exit-code -- budget.html ../index.html
       - name: Instalar dependências do desktop
         working-directory: desktop
-        run: npm ci
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/electron/install.js
       - name: Gerar AppImage
         run: |
           ./scripts/build-appimage.sh "$BUDGET_APPIMAGE_ARCH"
