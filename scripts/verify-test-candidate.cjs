@@ -53,7 +53,9 @@ function assertVersionTransition(baseVersion, currentVersion) {
   assert.notEqual(
     currentVersion,
     baseVersion,
-    'arquivos distribuídos mudaram sem incrementar a versão'
+    'arquivos distribuídos mudaram sem incrementar a versão; prepare uma ' +
+      'candidata inédita X.Y.Z-test.N antes de integrar (inclusive para ' +
+      'atualizações do Dependabot)'
   );
 
   const base = parseVersion(baseVersion);

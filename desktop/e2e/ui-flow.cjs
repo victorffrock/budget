@@ -50,6 +50,9 @@ async function run() {
     height: 780,
     show: false,
     webPreferences: {
+      // O teste mantém a janela oculta; sem isto, versões recentes do Electron
+      // podem suspender requestAnimationFrame e produzir falsos resultados.
+      backgroundThrottling: false,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -163,7 +166,10 @@ async function run() {
     assert.equal(scrollingState.headerPosition, 'sticky');
     assert.equal(scrollingState.scrollable, true);
     assert.equal(scrollingState.rowCount, 17);
-    assert.ok(Math.abs(scrollingState.headerAfter) <= 1, 'o cabeçalho deve permanecer no topo ao rolar');
+    assert.ok(
+      Math.abs(scrollingState.headerAfter) <= 1,
+      `o cabeçalho deve permanecer no topo ao rolar (top=${scrollingState.headerAfter})`
+    );
 
     const clearedState = await execute(window, `
       (() => {
@@ -193,7 +199,15 @@ async function run() {
   }
 }
 
-run().catch((error) => {
-  console.error(error.stack || error);
+const suiteTimeout = setTimeout(() => {
+  console.error('A suíte de interface excedeu o limite de 60 segundos.');
   app.exit(1);
-});
+}, 60000);
+
+run()
+  .then(() => clearTimeout(suiteTimeout))
+  .catch((error) => {
+    clearTimeout(suiteTimeout);
+    console.error(error.stack || error);
+    app.exit(1);
+  });
