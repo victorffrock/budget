@@ -43,7 +43,9 @@ Pull requests para `main` que não representem exatamente a árvore atual de
 Os testes unitários ficam em `app/test`. O fluxo de interface real está em
 `desktop/e2e/ui-flow.cjs`: ele abre o Electron sem mostrar uma janela e cobre
 valores avulsos, saldo disponível, rolagem e limpeza. Em CI, essa suíte roda
-com uma tela virtual; localmente ela precisa de uma sessão gráfica.
+com uma tela virtual; localmente ela precisa de uma sessão gráfica. O comando
+usa o backend X11 de forma explícita para reproduzir o Xvfb da CI também em
+sessões GNOME/Wayland e evitar resultados intermitentes de janelas invisíveis.
 
 ## Verificações no GitHub
 
@@ -59,5 +61,12 @@ atualização inesperado. Assim, o download manual e o Gear Lever consomem o
 mesmo binário canônico.
 O Dependabot abre atualizações em `test`, para que dependências sigam o mesmo
 fluxo de validação das demais mudanças antes de uma promoção para `main`.
+Essas pull requests são propostas de atualização, não candidatas prontas para
+mesclagem: reúna as propostas compatíveis em uma branch temporária baseada em
+`test`, faça os ajustes exigidos pelas novas versões, avance para uma versão
+inédita `-test.N` e execute a validação completa. Só então abra a pull request
+de manutenção para `test` e encerre as propostas substituídas. A validação de
+versão permanece obrigatória porque mesclar uma dependência sem gerar uma nova
+pré-release deixaria o código e o AppImage do Gear Lever fora de sincronia.
 Essas verificações complementam, mas não substituem, a conferência manual dos
 valores extraídos de boletos.

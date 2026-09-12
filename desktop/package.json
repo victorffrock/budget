@@ -1,6 +1,6 @@
 {
   "name": "budget",
-  "version": "6.1.10",
+  "version": "6.1.11-test.1",
   "description": "Soma o valor de boletos em PDF, tudo processado localmente no seu computador. Visual baseado no GNOME HIG.",
   "author": "Victor Ferreira Franco",
   "homepage": "https://github.com/victorffrock/budget",
@@ -15,11 +15,11 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "test:ui": "electron e2e/ui-flow.cjs",
+    "test:ui": "electron e2e/ui-flow.cjs --ozone-platform=x11",
     "dist": "electron-builder --linux AppImage --publish never"
   },
   "devDependencies": {
-    "electron": "44.1.1",
+    "electron": "44.3.0",
     "electron-builder": "26.15.3"
   },
   "build": {
@@ -56,6 +56,6 @@
     ]
   },
   "allowScripts": {
-    "electron@44.1.1": true
+    "electron@44.3.0": true
   }
 }
