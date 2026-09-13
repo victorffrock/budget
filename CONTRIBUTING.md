@@ -26,7 +26,11 @@ Obrigado por querer melhorar o Budget.
 Não inclua boletos, faturas ou outros documentos reais no repositório ou nos testes.
 
 Depois de validada, uma alteração segue para `test`. A promoção de `test` para
-`main` é reservada a uma versão estável e está documentada em
+`main` é reservada a uma versão estável. Use o workflow **Preparar promoção
+para main** para criar a branch temporária compatível e abra a pull request pelo
+link fornecido no resumo. Não abra uma PR diretamente de `test` para `main`:
+os históricos lineares são independentes e podem produzir conflitos mesmo com
+árvores idênticas. O procedimento completo está documentado em
 [docs/RELEASES.md](docs/RELEASES.md).
 Pull requests para `main` que não representem exatamente a árvore atual de
 `test` são recusadas, inclusive quando alteram somente documentação ou CI.
