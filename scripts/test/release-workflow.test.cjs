@@ -13,6 +13,10 @@ const stable = fs.readFileSync(
   path.join(root, '.github', 'workflows', 'publish-stable.yml'),
   'utf8'
 );
+const promotion = fs.readFileSync(
+  path.join(root, '.github', 'workflows', 'prepare-stable-promotion.yml'),
+  'utf8'
+);
 const guard = fs.readFileSync(
   path.join(root, '.github', 'workflows', 'release-guard.yml'),
   'utf8'
@@ -75,6 +79,17 @@ test('o canal test exige versão inédita e CodeQL antes de publicar', () => {
 test('main aceita somente a árvore integral da branch test', () => {
   assert.match(ci, /git diff --quiet origin\/test "\$GITHUB_SHA" -- \./);
   assert.match(ci, /não corresponde integralmente à branch test/);
+});
+
+test('a promoção prepara uma branch compatível sem executar código de test', () => {
+  assert.match(promotion, /workflow_dispatch:/);
+  assert.match(promotion, /ref: main/);
+  assert.match(promotion, /refs\/heads\/main:refs\/remotes\/origin\/main/);
+  assert.match(promotion, /refs\/heads\/test:refs\/remotes\/origin\/test/);
+  assert.match(promotion, /create-promotion-commit\.cjs/);
+  assert.match(promotion, /compare\/main\.\.\.\$branch\?expand=1/);
+  assert.doesNotMatch(promotion, /gh pr create/);
+  assert.doesNotMatch(promotion, /git push origin (main|test)/);
 });
 
 test('a publicação estável possui uma única entrada manual controlada', () => {

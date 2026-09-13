@@ -1,0 +1,117 @@
+name: Preparar promoção para main
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Versão estável já validada em test, sem o prefixo v
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: budget-prepare-stable-promotion
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Criar branch temporária de promoção
+    runs-on: ubuntu-latest
+    steps:
+      # O workflow e os scripts executáveis são sempre lidos da main. A test
+      # fornece somente a árvore de dados que será promovida, evitando que uma
+      # mudança ainda não estável execute código com permissão de escrita.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Buscar as pontas protegidas
+        run: |
+          git fetch --force origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/test:refs/remotes/origin/test'
+
+      - name: Validar versão e pré-release aprovada
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          case "$REQUESTED_VERSION" in
+            ''|*[!0-9.]*|*.*.*.*)
+              echo 'ERRO: informe uma versão estável no formato X.Y.Z.'
+              exit 1
+              ;;
+          esac
+
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            > /tmp/budget-releases.json
+          tested_tag="$(node scripts/verify-tested-prerelease.cjs \
+            "$REQUESTED_VERSION" --tag-only < /tmp/budget-releases.json)"
+          node scripts/verify-promoted-source.cjs \
+            "$tested_tag" origin/test origin/test
+
+      - id: promotion
+        name: Preparar commit sem alterar main ou test
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          branch="release/$REQUESTED_VERSION-main"
+          remote_sha="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
+          existing_ref=''
+
+          if [ -n "$remote_sha" ]; then
+            git fetch origin "+refs/heads/$branch:refs/remotes/origin/$branch"
+            existing_ref="origin/$branch"
+          fi
+
+          result="$(node scripts/create-promotion-commit.cjs \
+            "$REQUESTED_VERSION" ${existing_ref:+"$existing_ref"})"
+          status="$(jq -r .status <<< "$result")"
+          commit="$(jq -r .commit <<< "$result")"
+
+          if [ "$status" = created ]; then
+            git push origin "$commit:refs/heads/$branch"
+          fi
+
+          compare_url="https://github.com/$GITHUB_REPOSITORY/compare/main...$branch?expand=1"
+          printf '%s\n' \
+            "status=$status" \
+            "branch=$branch" \
+            "commit=$commit" \
+            "compare_url=$compare_url" >> "$GITHUB_OUTPUT"
+
+      - name: Informar o próximo passo protegido
+        env:
+          STATUS: ${{ steps.promotion.outputs.status }}
+          BRANCH: ${{ steps.promotion.outputs.branch }}
+          COMMIT: ${{ steps.promotion.outputs.commit }}
+          COMPARE_URL: ${{ steps.promotion.outputs.compare_url }}
+        run: |
+          if [ "$STATUS" = already-promoted ]; then
+            {
+              echo '## Promoção já integrada'
+              echo
+              echo '`main` já possui exatamente a árvore aprovada em `test`.'
+              echo 'Nenhuma branch foi criada ou alterada.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo '## Branch de promoção pronta'
+            echo
+            echo "- Branch: \`$BRANCH\`"
+            echo "- Commit validado: \`$COMMIT\`"
+            echo
+            echo "[Abrir a pull request para main]($COMPARE_URL)"
+            echo
+            echo 'Crie a PR, espere as oito verificações obrigatórias e use **Rebase and merge**.'
+            echo 'A branch temporária será apagada automaticamente após a integração.'
+          } >> "$GITHUB_STEP_SUMMARY"
