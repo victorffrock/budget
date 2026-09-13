@@ -113,11 +113,14 @@ direta da barreira de publicação.
 
 Uma pré-release nunca substitui a versão estável indicada pelo Gear Lever. A
 promoção para `main` só acontece depois dos testes automatizados e da
-verificação manual da pré-release. A pull request para `main` é aceita somente
-se sua árvore inteira for idêntica ao estado atual de `test`, e a publicação
-estável ocorre pelo workflow controlado **Promover release estável**. Ela é
-recusada se a pré-release correspondente não existir, não estiver completa ou
-contiver código distribuído diferente. O processo completo está em
+verificação manual da pré-release. O workflow **Preparar promoção para main**
+cria uma branch temporária compatível com o histórico linear de `main`, sem
+alterar `main` ou `test`, e fornece o link para abrir a pull request. A PR é
+aceita somente se sua árvore inteira for idêntica ao estado atual de `test`.
+Depois da integração, a publicação ocorre pelo workflow controlado **Promover
+release estável**. Ela é recusada se a pré-release correspondente não existir,
+não estiver completa ou contiver código distribuído diferente. O processo
+completo está em
 [docs/RELEASES.md](docs/RELEASES.md).
 
 ## Observações

@@ -17,9 +17,11 @@ Branches de trabalho podem ser criadas a partir de `test`. Quando a pull request
 é mesclada no GitHub, a branch de origem é removida automaticamente; isso não
 se aplica a pull requests fechadas sem mesclagem, cujas branches podem ser
 removidas manualmente. As branches permanentes são protegidas. Use uma pull
-request para integrar mudanças em `test` ou promover `test` para `main`.
-A integração exige que as validações obrigatórias estejam aprovadas. Não publique uma versão
-estável diretamente a partir de uma branch de trabalho.
+request para integrar mudanças em `test`. Para promover uma versão, use o
+workflow **Preparar promoção para main**; ele cria a branch temporária correta
+e fornece o link da pull request para `main`. A integração exige que as
+validações obrigatórias estejam aprovadas. Não publique uma versão estável
+diretamente a partir de uma branch de trabalho.
 
 O contrato da CI compara a árvore completa de qualquer pull request destinada
 a `main` com a ponta atual de `test`. Portanto, nenhuma mudança — nem mesmo de
@@ -120,10 +122,28 @@ fontes de versão, gere novamente o HTML offline, execute a validação de vers�
 e espere a CI passar. Assim, por exemplo, `6.0.0-test.1` se torna `6.0.0` antes
 da publicação.
 
-Promova então esse commit final de `test` para `main` por uma pull request no
-GitHub. A CI exige que a árvore completa da pull request seja idêntica à ponta
-atual de `test`. Espere as validações obrigatórias e escolha **Rebase and
-merge**. A proteção de branch impede o push direto e mantém o histórico linear.
+Abra **Actions → Preparar promoção para main → Run workflow**, informe a versão
+sem `v` — por exemplo, `6.2.0` — e confirme. O workflow sempre usa a automação
+estável presente em `main`, lê a ponta protegida de `test`, exige a pré-release
+aprovada e cria um único commit com estas propriedades:
+
+- o pai é a ponta atual de `main`;
+- a árvore é exatamente a ponta atual de `test`;
+- nenhuma das duas branches protegidas é movida ou reescrita.
+
+Esse commit é publicado na branch temporária `release/X.Y.Z-main`. Abra o link
+exibido no resumo do workflow e crie a pull request para `main`. A criação da
+PR permanece intencionalmente humana: os eventos produzidos pelo token interno
+do GitHub não iniciam novos workflows, enquanto a PR criada pela interface
+executa normalmente as oito verificações obrigatórias. A CI compara a árvore
+com `test`; espere tudo passar e escolha **Rebase and merge**. A branch
+temporária é apagada automaticamente depois da integração.
+
+Não abra uma PR diretamente de `test` para `main`. As branches preservam
+históricos lineares independentes e essa PR pode apresentar conflitos mesmo
+quando ambas estão corretas. O workflow existe para reconciliar somente o
+histórico, sem copiar arquivos manualmente, descartar commits ou contornar as
+proteções.
 
 Depois da integração, abra **Actions → Promover release estável → Run
 workflow**, informe a versão sem `v` — por exemplo, `6.2.0` — e confirme. Esse
