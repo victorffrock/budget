@@ -18,5 +18,5 @@
   "allowScripts": {
     "tesseract.js": false
   },
-  "version": "6.1.12-test.1"
+  "version": "6.1.12"
 }
